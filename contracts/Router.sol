@@ -193,4 +193,6 @@ contract Router is Ownable2Step,ReentrancyGuard {
     function rescueFunds(address _token, uint256 _amount) external onlyOwner {
         Helper._transfer(_token, msg.sender, _amount);
     }
+
+    receive() external payable {}
 }

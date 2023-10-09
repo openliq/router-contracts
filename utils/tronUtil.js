@@ -3,12 +3,6 @@ require('dotenv').config();
 
 
 
-exports.getContractAt = async function getContractAt(artifacts,name,address,tronWeb){
-    let art = await artifacts.readArtifact(name);
-    let c = await tronWeb.contract(art.abi,address);
-    return c;
-}
-
 exports.deploy_contract = async function deploy_contract(artifacts,name,args,tronWeb){
     let c = await artifacts.readArtifact(name);
     let contract_instance = await tronWeb.contract().new({
