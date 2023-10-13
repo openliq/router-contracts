@@ -8,8 +8,6 @@ import "./lib/ErrorMessage.sol";
 import "./lib/Helper.sol";
 
 
-
-
 contract FeeManager is Ownable2Step,IFeeManager{
    
    uint256 constant FEE_DENOMINATOR = 10000;
@@ -35,7 +33,7 @@ contract FeeManager is Ownable2Step,IFeeManager{
        mapping(address => IntegratorFeeInfo) integratorToFeeInfo;
    }
 
-   FeeStruct feeStruct;
+   FeeStruct public feeStruct;
     // Integrator -> TokenAddress -> Balance
     mapping(address => mapping(address => uint256)) private _balances;
     // TokenAddress -> Balance
@@ -119,7 +117,7 @@ contract FeeManager is Ownable2Step,IFeeManager{
             balance = _balances[msg.sender][tokenAddresses[i]];
             if (balance != 0) {
                 _balances[msg.sender][tokenAddresses[i]] = 0;
-                 Helper._transfer(tokenAddresses[i],payable(msg.sender),balance);
+                 Helper._transfer(tokenAddresses[i],msg.sender,balance);
                 emit FeesWithdrawn(tokenAddresses[i], msg.sender, balance);
             }
             unchecked {
@@ -129,14 +127,16 @@ contract FeeManager is Ownable2Step,IFeeManager{
     }
 
 
-    function withdrawButterFees(address[] memory tokenAddresses) external onlyOwner{
+    function withdrawPlatformFees(address[] memory tokenAddresses) external onlyOwner{
         uint256 length = tokenAddresses.length;
         uint256 balance;
         for (uint256 i = 0; i < length; ) {
             balance = _platformBalances[tokenAddresses[i]];
             _platformBalances[tokenAddresses[i]] = 0;
-            Helper._transfer(tokenAddresses[i],msg.sender,balance);
-            emit PlatformFeesWithdrawn(tokenAddresses[i], msg.sender, balance);
+            if(balance != 0){
+                Helper._transfer(tokenAddresses[i],msg.sender,balance);
+                emit PlatformFeesWithdrawn(tokenAddresses[i], msg.sender, balance);
+            }
             unchecked {
                 ++i;
             }
@@ -145,6 +145,11 @@ contract FeeManager is Ownable2Step,IFeeManager{
 
     function getFee(address integrator, address inpputToken,uint256 inputAmount) external view override returns(address feeToken,uint256 amount,uint256 nativeAmount){
           return _getFee(integrator,inpputToken,inputAmount);
+    }
+
+
+    function integratorFeeInfo(address integrator) external view returns(IntegratorFeeInfo memory){
+        return feeStruct.integratorToFeeInfo[integrator];
     }
 
     function getAmountBeforeFee(address integrator, address inpputToken,uint256 inputAmount)external view override returns(address feeToken,uint256 beforeAmount){
