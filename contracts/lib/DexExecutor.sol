@@ -14,7 +14,8 @@ library DexExecutor {
         UNIV2,
         UNIV3,
         CURVE,
-        FILL
+        FILL,
+        MIX
     }
 
     function execute(
@@ -38,10 +39,52 @@ library DexExecutor {
             (_result) = _makeCurveSwap(_router, _amount, _isNative, _swap);
         } else if(dexType == DexType.FILL){
             (_result) = _makeAggFill(_router, _amount, _isNative, _swap);
+        }else if(dexType == DexType.MIX){
+            (_result) = _makeMixSwap(_srcToken,_amount, _swap);
         }else {
-           require(false,"DexExecutor: unsupported dex type");
+            require(false,"DexExecutor: unsupported dex type");
         }
         require(_result, "DexExecutor: swap fail");
+    }
+
+    struct MIXSwap{
+       uint256 offset;
+       address srcToken;
+       address callTo;
+       address approveTo;
+       bytes callDatas;
+    }
+    function _makeMixSwap(address _srcToken,uint256 _amount,bytes memory _swap) internal returns (bool _result){
+        MIXSwap[] memory mixSwaps = abi.decode(_swap,(MIXSwap[]));
+        for(uint256 i = 0; i < mixSwaps.length; i++){
+            if(i != 0){
+                _amount = Helper._getBalance(mixSwaps[i].srcToken,address(this));
+                _srcToken = mixSwaps[i].srcToken;
+            } 
+            bytes memory callDatas = mixSwaps[i].callDatas;
+            uint256 offset =  mixSwaps[i].offset;
+            if(offset != 0){
+                assembly {
+                    mstore(add(callDatas,offset), _amount)
+                }
+            }
+            if (Helper._isNative(_srcToken)) {
+                (_result, ) = mixSwaps[i].callTo.call{value: _amount}(callDatas);
+            } else {
+                if(i != 0){
+                    IERC20(_srcToken).safeIncreaseAllowance(mixSwaps[i].approveTo, _amount);
+                }
+
+                (_result, ) = mixSwaps[i].callTo.call(callDatas);
+                
+                if(i != 0){
+                    IERC20(_srcToken).safeApprove(mixSwaps[i].approveTo, 0);
+                }
+            }
+            if(!_result){
+                break;
+            }
+        }
     }
 
     function _makeAggSwap(
