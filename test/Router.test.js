@@ -185,7 +185,7 @@ it("swapAndCall", async () => {
     let tokenOut = await ethers.getContractAt(ERC20, "0xdAC17F958D2ee523a2206206994597C13D831ec7", user); 
     let balanceBefore = await tokenOut.balanceOf(user.address);
     await(await token.approve(router.address,_amount)).wait();  
-    await(await router.connect(user).swapAndCall(ethers.constants.HashZero,_srcToken,_amount,user.address,_swapData,_bridgeData,_permitData)).wait();
+    await(await router.connect(user).swapAndCall(ethers.constants.HashZero,_srcToken,_amount,user.address,_swapData,"0x",_permitData)).wait();
     let balanceAfter = await tokenOut.balanceOf(user.address);
 
     expect(balanceAfter).gt(balanceBefore);

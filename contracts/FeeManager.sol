@@ -20,10 +20,10 @@ contract FeeManager is Ownable2Step,IFeeManager{
 
     struct IntegratorFeeInfo {
         FeeType feeType; 
-        uint32 tokenFee;          //fixed input token amount or ratio of input token amount 
         uint32 platformTokenShare;
         uint32 platformNativeShare; 
-        uint128 fixedNativeAmount;
+        uint80 tokenFee;  //fixed input token amount or ratio of input token amount 
+        uint96 fixedNativeAmount;
     }
 
    struct FeeStruct{

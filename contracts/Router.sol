@@ -110,6 +110,15 @@ contract Router is Ownable2Step,ReentrancyGuard {
     }
 
 
+    function getFee(address integrator, address inpputToken,uint256 inputAmount) external view returns(address feeToken,uint256 amount,uint256 nativeAmount){
+           return feeManager.getFee(integrator,inpputToken,inputAmount);
+    } 
+
+    function getAmountBeforeFee(address integrator, address inpputToken,uint256 inputAmount)external view returns(address feeToken,uint256 beforeAmount) {
+            return feeManager.getAmountBeforeFee(integrator,inpputToken,inputAmount);
+    }
+
+
     function _doSwapAndCall(bytes memory _swapData,bytes memory _callbackData,address _srcToken,uint256 _amount) internal returns(address receiver,address target,address dstToken,uint256 swapOutAmount,uint256 callAmount){
         bool result;
         swapOutAmount = _amount;
