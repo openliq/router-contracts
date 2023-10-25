@@ -1,7 +1,7 @@
 {
-  "name": "@butternetwork/router",
-  "version": "1.2.0",
-  "description": "Butter omnichain aggregate swap contracts based on MAP Protocol",
+  "name": "@openliq/router",
+  "version": "1.0.0",
+  "description": "Omnichain liquidity aggregation router for DeFi",
   "main": "index.js",
   "files": [
     "artifacts/contracts/**/*.sol/*.json",
@@ -12,26 +12,27 @@
     "!contracts/mock/*.sol"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "format": "prettier --print-width 120 --write ./contracts ./scripts ./tasks ./test"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/butternetwork/butter-router-contracts.git"
+    "url": "https://github.com/openliq/router-contracts.git"
   },
   "author": "Butter Network",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/butternetwork/butter-router-contracts/issues"
+    "url": "https://github.com/openliq/router-contracts/issues"
   },
-  "homepage": "https://butternetwork.io",
+  "homepage": "https://openliq.com",
   "devDependencies": {
-    "@butternetwork/bridge": "^1.0.1",
+    "@butternetwork/bridge": "^1.1.0",
     "@ethersproject/providers": "^5.7.2",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.0",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
     "@nomicfoundation/hardhat-toolbox": "^2.0.0",
     "@nomiclabs/hardhat-ethers": "^2.0.0",
-    "@nomiclabs/hardhat-etherscan": "^3.0.0",
+    "@nomiclabs/hardhat-etherscan": "^3.1.7",
     "@typechain/ethers-v5": "^10.1.0",
     "@typechain/hardhat": "^6.1.2",
     "@types/chai": "^4.2.0",
@@ -41,6 +42,8 @@
     "hardhat": "^2.14.0",
     "hardhat-gas-reporter": "^1.0.8",
     "solidity-coverage": "^0.8.1",
+    "prettier": "^2.8.8",
+    "prettier-plugin-solidity": "^1.1.0",
     "ts-node": "^10.9.1",
     "typechain": "^8.1.0",
     "typescript": "^4.9.5"
@@ -49,7 +52,7 @@
     "@matterlabs/hardhat-zksync-deploy": "^0.6.3",
     "@matterlabs/hardhat-zksync-solc": "^0.3.17",
     "@matterlabs/hardhat-zksync-verify": "^0.1.6",
-    "@openzeppelin/contracts": "^4.8.2",
+    "@openzeppelin/contracts": "^4.9.3",
     "dotenv": "^16.0.3",
     "hardhat-deploy": "^0.11.25",
     "tronweb": "^5.3.0",
