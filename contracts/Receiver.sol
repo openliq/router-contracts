@@ -13,39 +13,38 @@ import "./lib/Helper.sol";
 // connext(Amarok) deploy address  https://docs.connext.network/resources/deployments  -- connext
 // celer deploy address https://im-docs.celer.network/developer/contract-addresses-and-rpc-info -- MessageBus
 
-contract Receiver is ReentrancyGuard,RemoteSwapper{
-   using SafeERC20 for IERC20;
-   using Address for address;
+contract Receiver is ReentrancyGuard, RemoteSwapper {
+    using SafeERC20 for IERC20;
+    using Address for address;
 
-   uint256 public recoverGas = 100000;
-   address public amarokRouter;
-   address public sgRouter;
-   address public cBridgeMessageBus;
-
+    uint256 public recoverGas = 100000;
+    address public amarokRouter;
+    address public sgRouter;
+    address public cBridgeMessageBus;
 
     event StargateRouterSet(address indexed _router);
     event CBridgeMessageBusSet(address indexed _router);
     event AmarokRouterSet(address indexed _router);
     event RecoverGasSet(uint256 indexed _recoverGas);
 
-   constructor(address _owner) {
+    constructor(address _owner) {
         _transferOwnership(_owner);
-   }
+    }
 
     function setStargateRouter(address _sgRouter) external onlyOwner {
-        require(_sgRouter.isContract(),ErrorMessage.NOT_CONTRACT);
+        require(_sgRouter.isContract(), ErrorMessage.NOT_CONTRACT);
         sgRouter = _sgRouter;
         emit StargateRouterSet(_sgRouter);
     }
 
     function setAmarokRouter(address _amarokRouter) external onlyOwner {
-        require(_amarokRouter.isContract(),ErrorMessage.NOT_CONTRACT);
+        require(_amarokRouter.isContract(), ErrorMessage.NOT_CONTRACT);
         amarokRouter = _amarokRouter;
         emit AmarokRouterSet(_amarokRouter);
     }
 
-    function setCBridgeMessageBus(address _messageBusAddress)external onlyOwner{
-        require(_messageBusAddress.isContract(),ErrorMessage.NOT_CONTRACT);
+    function setCBridgeMessageBus(address _messageBusAddress) external onlyOwner {
+        require(_messageBusAddress.isContract(), ErrorMessage.NOT_CONTRACT);
         cBridgeMessageBus = _messageBusAddress;
         emit CBridgeMessageBusSet(_messageBusAddress);
     }
@@ -73,10 +72,12 @@ contract Receiver is ReentrancyGuard,RemoteSwapper{
         uint32,
         bytes memory _callData
     ) external nonReentrant {
-         require (msg.sender == amarokRouter,ErrorMessage.NO_APPROVE);
-         (bytes32 transationId,bytes memory _swapData,bytes memory _callbackData) = 
-         abi.decode(_callData,(bytes32,bytes,bytes));
-         _swapAndCall(transationId,_asset,_amount,_swapData,_callbackData,recoverGas);
+        require(msg.sender == amarokRouter, ErrorMessage.NO_APPROVE);
+        (bytes32 transationId, bytes memory _swapData, bytes memory _callbackData) = abi.decode(
+            _callData,
+            (bytes32, bytes, bytes)
+        );
+        _swapAndCall(transationId, _asset, _amount, _swapData, _callbackData, recoverGas);
     }
 
     /// @notice Completes a cross-chain transaction on the receiving chain.
@@ -87,7 +88,7 @@ contract Receiver is ReentrancyGuard,RemoteSwapper{
     /// @param * (unused) The token contract on the local chain
     /// @param _amountLD The amount of tokens received through bridging
     /// @param _payload The data to execute
-     function sgReceive(
+    function sgReceive(
         uint16, // _srcChainId unused
         bytes memory, // _srcAddress unused
         uint256, // _nonce unused
@@ -95,13 +96,15 @@ contract Receiver is ReentrancyGuard,RemoteSwapper{
         uint256 _amountLD,
         bytes memory _payload
     ) external nonReentrant {
-         require (msg.sender == sgRouter,ErrorMessage.NO_APPROVE);
-         (bytes32 transationId,bytes memory _swapData,bytes memory _callbackData) = 
-         abi.decode(_payload,(bytes32,bytes,bytes));
-         _swapAndCall(transationId,_token,_amountLD,_swapData,_callbackData,recoverGas);
+        require(msg.sender == sgRouter, ErrorMessage.NO_APPROVE);
+        (bytes32 transationId, bytes memory _swapData, bytes memory _callbackData) = abi.decode(
+            _payload,
+            (bytes32, bytes, bytes)
+        );
+        _swapAndCall(transationId, _token, _amountLD, _swapData, _callbackData, recoverGas);
     }
 
-        /**
+    /**
      * @notice Called by MessageBus to execute a message with an associated token transfer.
      * The Receiver is guaranteed to have received the right amount of tokens before this function is called.
      * @param * (unused) The address of the source app contract
@@ -118,15 +121,14 @@ contract Receiver is ReentrancyGuard,RemoteSwapper{
         uint64,
         bytes calldata _message,
         address
-    ) external payable nonReentrant returns (IMessageReceiverApp.ExecutionStatus){    
-        require (msg.sender == cBridgeMessageBus,ErrorMessage.NO_APPROVE);
+    ) external payable nonReentrant returns (IMessageReceiverApp.ExecutionStatus) {
+        require(msg.sender == cBridgeMessageBus, ErrorMessage.NO_APPROVE);
         // decode message
-        (
-            bytes32 transactionId,
-            bytes memory _swapData,
-            bytes memory _callbackData
-        ) = abi.decode(_message,(bytes32,bytes,bytes));
-        _swapAndCall(transactionId,_token,_amount,_swapData,_callbackData,recoverGas);
+        (bytes32 transactionId, bytes memory _swapData, bytes memory _callbackData) = abi.decode(
+            _message,
+            (bytes32, bytes, bytes)
+        );
+        _swapAndCall(transactionId, _token, _amount, _swapData, _callbackData, recoverGas);
         return IMessageReceiverApp.ExecutionStatus.Success;
     }
 
@@ -143,28 +145,27 @@ contract Receiver is ReentrancyGuard,RemoteSwapper{
         uint256 _amount,
         bytes calldata _message,
         address
-    )external payable nonReentrant returns (IMessageReceiverApp.ExecutionStatus){     
-        require (msg.sender == cBridgeMessageBus,ErrorMessage.NO_APPROVE);
-        (
-            bytes32 transactionId,
-            bytes memory _swapData,
-            bytes memory _callbackData
-        ) = abi.decode(_message,(bytes32,bytes,bytes));
+    ) external payable nonReentrant returns (IMessageReceiverApp.ExecutionStatus) {
+        require(msg.sender == cBridgeMessageBus, ErrorMessage.NO_APPROVE);
+        (bytes32 transactionId, bytes memory _swapData, bytes memory _callbackData) = abi.decode(
+            _message,
+            (bytes32, bytes, bytes)
+        );
         address receiver;
-        if(_swapData.length > 0){
-             Helper.SwapParam memory swap = abi.decode(_swapData, (Helper.SwapParam));
-             receiver = swap.receiver;
+        if (_swapData.length > 0) {
+            Helper.SwapParam memory swap = abi.decode(_swapData, (Helper.SwapParam));
+            receiver = swap.receiver;
         } else {
-            (Helper.CallbackParam memory callParam) = abi.decode(_callbackData, (Helper.CallbackParam));
+            Helper.CallbackParam memory callParam = abi.decode(_callbackData, (Helper.CallbackParam));
             receiver = callParam.receiver;
         }
         // return funds to cBridgeData.refundAddress
-        Helper._transfer(_token,receiver,_amount);
+        Helper._transfer(_token, receiver, _amount);
         return IMessageReceiverApp.ExecutionStatus.Success;
     }
 
     function rescueFunds(address _token, uint256 _amount) external onlyOwner {
-        Helper._transfer(_token,msg.sender,_amount);
+        Helper._transfer(_token, msg.sender, _amount);
     }
 
     receive() external payable {}

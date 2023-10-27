@@ -98,15 +98,15 @@ contract Router is Ownable2Step, ReentrancyGuard {
         bytes calldata _swapData,
         bytes calldata _callbackData,
         bytes calldata _permitData,
-        address integrator,
-        uint256 feeP
+        address _referrer,
+        uint256 _fee
     ) external payable nonReentrant transferIn(_srcToken, _amount, _permitData) {
         SwapTemp memory swapTemp;
         swapTemp.srcToken = _srcToken;
         swapTemp.srcAmount = _amount;
         swapTemp.transferId = _transferId;
         require(_swapData.length + _callbackData.length > 0, ErrorMessage.DATA_EMPTY);
-        swapTemp.swapAmount = _collectFee(swapTemp.srcToken, swapTemp.srcAmount, swapTemp.transferId,integrator);
+        swapTemp.swapAmount = _collectFee(swapTemp.srcToken, swapTemp.srcAmount, swapTemp.transferId, _referrer);
         (swapTemp.receiver, swapTemp.target, swapTemp.swapToken, swapTemp.swapAmount, swapTemp.callAmount) = _doSwapAndCall(_swapData, _callbackData, swapTemp.srcToken, swapTemp.swapAmount);
 
         if (swapTemp.swapAmount > swapTemp.callAmount) {
@@ -129,19 +129,19 @@ contract Router is Ownable2Step, ReentrancyGuard {
     function getFee(
         address inputToken,
         uint256 inputAmount,
-        address integrator,
-        uint256 feeP
+        address referrer,
+        uint256 fee
     ) external view returns (address feeToken, uint256 amount, uint256 nativeAmount) {
-        return feeManager.getFee(integrator, inputToken, inputAmount);
+        return feeManager.getFee(referrer, inputToken, inputAmount);
     }
 
     function getAmountBeforeFee(
         address inputToken,
         uint256 inputAmount,
-        address integrator,
-        uint256 feeP
+        address referrer,
+        uint256 fee
     ) external view returns (address feeToken, uint256 beforeAmount) {
-        return feeManager.getAmountBeforeFee(integrator, inputToken, inputAmount);
+        return feeManager.getAmountBeforeFee(referrer, inputToken, inputAmount);
     }
 
     function _doSwapAndCall(

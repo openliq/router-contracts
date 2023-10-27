@@ -29,6 +29,7 @@ async function deployRouter(artifacts, network, wtoken) {
     let tronWeb = await getTronWeb(network);
     let deployer = "0x" + tronWeb.defaultAddress.hex.substring(2);
     console.log("deployer :", tronWeb.address.fromHex(deployer));
+
     let router = await deploy_contract(artifacts, "Router", [deployer, wtoken], tronWeb);
     console.log("router address :", router);
     let deploy = await readFromFile(network);

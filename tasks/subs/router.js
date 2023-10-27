@@ -14,6 +14,9 @@ let {
 task("router", "deploy router and set up").setAction(async (taskArgs, hre) => {
     const { getNamedAccounts, network } = hre;
     const { deployer } = await getNamedAccounts();
+
+    console.log("\ndeploy router and set up on", hre.network.name);
+
     let config = getConfig(network.name);
     if (!config) {
         throw "config not set";

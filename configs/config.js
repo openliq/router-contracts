@@ -384,6 +384,14 @@ let config = new Map(
             ]
            
         }],
+
+        ["Tron",{
+            wToken:"TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR",
+            executors:[
+                "TFVisXFaijZfeyeSjCEVkHfex7HGdTxzF9",   //sun.io
+                "TZ2dP5xgPrDZB9EbEgBidj3GTR272fYzqQ",   // butter
+            ]
+        }],
         
 
 
