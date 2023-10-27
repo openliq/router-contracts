@@ -16,6 +16,7 @@ exports.tronSetAuthorization = async function (artifacts, network, router_addr, 
 
 exports.tronSetFeeManager = async function (artifacts, network, router_addr, feeManager) {
     let tronWeb = await getTronWeb(network);
+
     if (router_addr.startsWith("0x")) {
         router_addr = tronWeb.address.fromHex(router_addr);
     }
@@ -27,8 +28,9 @@ exports.tronSetFeeManager = async function (artifacts, network, router_addr, fee
 
 async function deployRouter(artifacts, network, wtoken) {
     let tronWeb = await getTronWeb(network);
-    let deployer = "0x" + tronWeb.defaultAddress.hex.substring(2);
-    console.log("deployer :", tronWeb.address.fromHex(deployer));
+    console.log("deployer :", tronWeb.defaultAddress);
+
+    let deployer = tronWeb.defaultAddress.hex.replace(/^(41)/, "0x");
 
     let router = await deploy_contract(artifacts, "Router", [deployer, wtoken], tronWeb);
     console.log("router address :", router);
@@ -82,8 +84,10 @@ exports.tronSetAuthFromConfig = async function (artifacts, network, router_addr,
 
 async function deploySwapAdapter(artifacts, network) {
     let tronWeb = await getTronWeb(network);
-    let deployer = "0x" + tronWeb.defaultAddress.hex.substring(2);
-    console.log("deployer :", tronWeb.address.fromHex(deployer));
+    console.log("deployer :", tronWeb.defaultAddress);
+
+    let deployer = tronWeb.defaultAddress.hex.replace(/^(41)/, "0x");
+
     let adapt = await deploy_contract(artifacts, "SwapAdapter", [deployer], tronWeb);
     console.log("SwapAdapter address :", adapt);
     let deploy = await readFromFile(network);
@@ -103,6 +107,12 @@ async function setAuthorization(tronWeb, artifacts, router_addr, executors, flag
         console.log("executors is empty ...");
         return;
     }
-    await router.setAuthorization(executorList, flag).send();
+
+    let executorsHex = [];
+    for (let i = 0; i < executorList.length; i++) {
+        executorsHex.push(tronWeb.address.toHex(executorList[i]).replace(/^(41)/, "0x"));
+    }
+    await router.setAuthorization(executorsHex, flag).send();
+
     console.log(`Router ${router_addr} setAuthorization ${executorList} succeed`);
 }

@@ -10,9 +10,13 @@ exports.deploy_contract = async function deploy_contract(artifacts, name, args, 
         callValue: 0,
         parameters: args,
     });
-    console.log(`${name} deployed on: ${contract_instance.address}`);
+    // console.log(`${name} deployed on: ${contract_instance.address}`);
 
-    return "0x" + contract_instance.address.substring(2);
+    let addr = tronWeb.address.fromHex(contract_instance.address);
+    console.log(`${name} deployed on: ${addr} ( ${contract_instance.address} )`);
+
+    return addr;
+    //return "0x" + contract_instance.address.substring(2);
 };
 
 exports.getTronWeb = async function (network) {
@@ -33,6 +37,6 @@ exports.getTronWeb = async function (network) {
             );
         }
     } else {
-        throw "unsupport network";
+        throw "unsupported network";
     }
 };

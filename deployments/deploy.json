@@ -1,0 +1,16 @@
+{
+	"Matic": {
+		"Router": {
+			"addr": "0x5E7c0b53681b246418E52cecbA3Ed1e1c4D45511"
+		},
+		"SwapAdapter": "0x7689d0A10837d5EFBcE455a1A5E5341e0C485Ee0",
+		"FeeManager": "0xaBD55DC13a569816002e157a58E6E7D8E24a45Cd"
+	},
+	"Tron": {
+		"Router": {
+			"addr": "TU8aQ9eaDQrbcNicPAnGduaHfBQXbfH5mE"
+		},
+		"SwapAdapter": "TCFKh8TPZSRrdJ6FKJaHaduYsW5RaPuyta",
+		"FeeManager": "TRzqGqPg1o9z3cTacBrh1AMVx4SoaBDEtw"
+	}
+}

@@ -4,8 +4,10 @@ let { deploy_contract, getTronWeb } = require("../../../utils/tronUtil.js");
 
 exports.deployFeeManager = async function (artifacts, network) {
     let tronWeb = await getTronWeb(network);
-    let deployer = "0x" + tronWeb.defaultAddress.hex.substring(2);
-    console.log("deployer :", tronWeb.address.fromHex(deployer));
+    console.log("deployer :", tronWeb.defaultAddress);
+
+    let deployer = tronWeb.defaultAddress.hex.replace(/^(41)/, "0x");
+
     let feeManager = await deploy_contract(artifacts, "FeeManager", [deployer], tronWeb);
     console.log("FeeManager address :", feeManager);
     let deploy = await readFromFile(network);
