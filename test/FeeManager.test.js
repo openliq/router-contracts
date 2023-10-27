@@ -38,7 +38,7 @@ describe("FeeManager", function () {
             "Ownable: caller is not the owner"
         );
         await expect(feeManager.connect(wallet).initialFeeStruct(2, 1000, 10000)).to.be.revertedWith(
-            "FeeManager: invalid tokenFee"
+            "FeeManager: invalid platformTokenFee"
         );
         await expect(feeManager.connect(wallet).initialFeeStruct(1, 1000, 10000)).to.emit(
             feeManager,
@@ -70,7 +70,7 @@ describe("FeeManager", function () {
         feeInfo.feeType = 2;
         feeInfo.tokenFee = 10000;
         await expect(feeManager.connect(wallet).setIntegratorFees(wallet.address, feeInfo)).to.be.revertedWith(
-            "FeeManager: invalid platformTokenFee"
+            "FeeManager: invalid tokenFee"
         );
         feeInfo.feeType = 2;
         feeInfo.tokenFee = 100;
