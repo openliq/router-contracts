@@ -95,19 +95,18 @@ contract Router is Ownable2Step, ReentrancyGuard {
         bytes32 _transferId,
         address _srcToken,
         uint256 _amount,
-        address integrator,
         bytes calldata _swapData,
         bytes calldata _callbackData,
-        bytes calldata _permitData
+        bytes calldata _permitData,
+        address integrator,
+        uint256 feeP
     ) external payable nonReentrant transferIn(_srcToken, _amount, _permitData) {
         SwapTemp memory swapTemp;
         swapTemp.srcToken = _srcToken;
         swapTemp.srcAmount = _amount;
         swapTemp.transferId = _transferId;
         require(_swapData.length + _callbackData.length > 0, ErrorMessage.DATA_EMPTY);
-
-        swapTemp.swapAmount = _collectFee(swapTemp.srcToken, swapTemp.srcAmount, swapTemp.transferId, integrator);
-
+        swapTemp.swapAmount = _collectFee(swapTemp.srcToken, swapTemp.srcAmount, swapTemp.transferId,integrator);
         (swapTemp.receiver, swapTemp.target, swapTemp.swapToken, swapTemp.swapAmount, swapTemp.callAmount) = _doSwapAndCall(_swapData, _callbackData, swapTemp.srcToken, swapTemp.swapAmount);
 
         if (swapTemp.swapAmount > swapTemp.callAmount) {
@@ -128,17 +127,19 @@ contract Router is Ownable2Step, ReentrancyGuard {
     }
 
     function getFee(
-        address integrator,
         address inputToken,
-        uint256 inputAmount
+        uint256 inputAmount,
+        address integrator,
+        uint256 feeP
     ) external view returns (address feeToken, uint256 amount, uint256 nativeAmount) {
         return feeManager.getFee(integrator, inputToken, inputAmount);
     }
 
     function getAmountBeforeFee(
-        address integrator,
         address inputToken,
-        uint256 inputAmount
+        uint256 inputAmount,
+        address integrator,
+        uint256 feeP
     ) external view returns (address feeToken, uint256 beforeAmount) {
         return feeManager.getAmountBeforeFee(integrator, inputToken, inputAmount);
     }

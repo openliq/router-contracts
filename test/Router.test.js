@@ -166,10 +166,11 @@ describe("Router", function () {
                     ethers.constants.HashZero,
                     _srcToken,
                     _amount,
-                    user.address,
                     _swapData,
                     _callData,
                     _permitData,
+                    user.address,
+                    0,
                     {
                         value: extraNativeAmount,
                     }
@@ -220,7 +221,7 @@ describe("Router", function () {
         await (
             await router
                 .connect(user)
-                .swapAndCall(ethers.constants.HashZero, _srcToken, _amount, user.address, _swapData, "0x", _permitData)
+                .swapAndCall(ethers.constants.HashZero, _srcToken, _amount,_swapData, "0x", _permitData,user.address,0)
         ).wait();
         let balanceAfter = await tokenOut.balanceOf(user.address);
 
@@ -271,10 +272,11 @@ describe("Router", function () {
                     ethers.constants.HashZero,
                     _srcToken,
                     _amount,
-                    user.address,
                     _swapData,
                     _callData,
-                    _permitData
+                    _permitData,
+                    user.address,
+                    0,
                 )
         ).wait();
         let balanceAfter = await user.getBalance();
@@ -336,10 +338,11 @@ describe("Router", function () {
                     ethers.constants.HashZero,
                     _srcToken,
                     _amount,
-                    user.address,
                     _swapData,
                     _payData,
-                    _permitData
+                    _permitData,
+                    user.address,
+                    0,
                 )
         )
             .to.be.emit(pay, "Pay")

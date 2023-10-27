@@ -6,24 +6,19 @@ task("receiver:deploy", "deploy receiver").setAction(async (taskArgs) => {
     const { deployments, getNamedAccounts, ethers } = hre;
     const { deployer } = await getNamedAccounts();
 
-    let deploy = await readFromFile(network.name);
-    if (!deploy[network.name]["Router"]) {
-        throw "deploy router first";
-    }
-    let router = deploy[network.name]["Router"]["addr"];
     if (network.name === "Tron" || network.name === "TronTest") {
-        await deployReceiver(hre.artifacts, network.name, router);
+        await deployReceiver(hre.artifacts, network.name);
     } else {
         console.log("deployer :", deployer);
         let chainId = await hre.network.config.chainId;
         let receiver;
         if (chainId === 324 || chainId === 280) {
-            receiver = await createZk("Receiver", [router, deployer], hre);
+            receiver = await createZk("Receiver", [deployer], hre);
         } else {
             let salt = process.env.RECEIVER_DEPLOY_SALT;
             let salt_hash = await ethers.utils.keccak256(await ethers.utils.toUtf8Bytes(salt));
             let Receiver = await ethers.getContractFactory("Receiver");
-            let param = ethers.utils.defaultAbiCoder.encode(["address", "address"], [router, deployer]);
+            let param = ethers.utils.defaultAbiCoder.encode(["address"], [deployer]);
             let result = await create(salt_hash, Receiver.bytecode, param);
             receiver = result[0];
         }
@@ -57,8 +52,6 @@ task("receiver:setRouter", "set bridges router address")
                 result = await (await receiver.setAmarokRouter(taskArgs.router)).wait();
             } else if (taskArgs.name === "stargate") {
                 result = await (await receiver.setStargateRouter(taskArgs.router)).wait();
-            } else if (taskArgs.name === "butter") {
-                result = await (await receiver.setAuthorization(taskArgs.router)).wait();
             } else {
                 throw "unspport name";
             }

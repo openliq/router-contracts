@@ -1,11 +1,11 @@
 let { readFromFile, writeToFile } = require("../../../utils/create.js");
 let { deploy_contract, getTronWeb } = require("../../../utils/tronUtil.js");
 
-exports.deployReceiver = async function (artifacts, network, router) {
+exports.deployReceiver = async function (artifacts, network) {
     let tronWeb = await getTronWeb(network);
     let deployer = "0x" + tronWeb.defaultAddress.hex.substring(2);
     console.log("deployer :", tronWeb.address.fromHex(deployer));
-    let receiver = await deploy_contract(artifacts, "Receiver", [router, deployer], tronWeb);
+    let receiver = await deploy_contract(artifacts, "Receiver", [deployer], tronWeb);
     console.log("Receiver address :", receiver);
     let deploy = await readFromFile(network);
     deploy[network]["Receiver"] = receiver;
@@ -30,8 +30,6 @@ exports.tronSetRouter = async function (artifacts, network, receiver_addr, route
         result = await receiver.setAmarokRouter(taskArgs.router).send();
     } else if (name === "stargate") {
         result = await receiver.setStargateRouter(taskArgs.router).send();
-    } else if (name === "openliq") {
-        result = await receiver.setAuthorization(taskArgs.router).send();
     } else {
         throw "unspport name";
     }
