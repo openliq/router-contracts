@@ -91,14 +91,19 @@ contract Router is Ownable2Step, ReentrancyGuard {
         emit SetFeeManager(_feeManager);
     }
 
+    struct FeeStruct {
+      address integrator;
+      uint256 percentage;
+    } 
+
     function swapAndCall(
         bytes32 _transferId,
         address _srcToken,
         uint256 _amount,
-        address integrator,
         bytes calldata _swapData,
         bytes calldata _callbackData,
-        bytes calldata _permitData
+        bytes calldata _permitData,
+        FeeStruct calldata fee
     ) external payable nonReentrant transferIn(_srcToken, _amount, _permitData) {
         SwapTemp memory swapTemp;
         swapTemp.srcToken = _srcToken;
@@ -106,7 +111,7 @@ contract Router is Ownable2Step, ReentrancyGuard {
         swapTemp.transferId = _transferId;
         require(_swapData.length + _callbackData.length > 0, ErrorMessage.DATA_EMPTY);
 
-        swapTemp.swapAmount = _collectFee(swapTemp.srcToken, swapTemp.srcAmount, swapTemp.transferId, integrator);
+        swapTemp.swapAmount = _collectFee(swapTemp.srcToken, swapTemp.srcAmount, swapTemp.transferId, fee.integrator);
 
         (swapTemp.receiver, swapTemp.target, swapTemp.swapToken, swapTemp.swapAmount, swapTemp.callAmount) = _doSwapAndCall(_swapData, _callbackData, swapTemp.srcToken, swapTemp.swapAmount);
 
@@ -128,19 +133,19 @@ contract Router is Ownable2Step, ReentrancyGuard {
     }
 
     function getFee(
-        address integrator,
+        FeeStruct calldata fee,
         address inputToken,
         uint256 inputAmount
     ) external view returns (address feeToken, uint256 amount, uint256 nativeAmount) {
-        return feeManager.getFee(integrator, inputToken, inputAmount);
+        return feeManager.getFee(fee.integrator, inputToken, inputAmount);
     }
 
     function getAmountBeforeFee(
-        address integrator,
+        FeeStruct calldata fee,
         address inputToken,
         uint256 inputAmount
     ) external view returns (address feeToken, uint256 beforeAmount) {
-        return feeManager.getAmountBeforeFee(integrator, inputToken, inputAmount);
+        return feeManager.getAmountBeforeFee(fee.integrator, inputToken, inputAmount);
     }
 
     function _doSwapAndCall(
