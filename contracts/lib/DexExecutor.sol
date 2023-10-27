@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.9;
+pragma solidity 0.8.21;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -47,22 +47,22 @@ library DexExecutor {
         require(_result, "DexExecutor: swap fail");
     }
 
-    struct MIXSwap {
+    struct MixSwap {
         uint256 offset;
         address srcToken;
         address callTo;
         address approveTo;
-        bytes callDatas;
+        bytes callData;
     }
 
     function _makeMixSwap(address _srcToken, uint256 _amount, bytes memory _swap) internal returns (bool _result) {
-        MIXSwap[] memory mixSwaps = abi.decode(_swap, (MIXSwap[]));
+        MixSwap[] memory mixSwaps = abi.decode(_swap, (MixSwap[]));
         for (uint256 i = 0; i < mixSwaps.length; i++) {
             if (i != 0) {
                 _amount = Helper._getBalance(mixSwaps[i].srcToken, address(this));
                 _srcToken = mixSwaps[i].srcToken;
             }
-            bytes memory callDatas = mixSwaps[i].callDatas;
+            bytes memory callDatas = mixSwaps[i].callData;
             uint256 offset = mixSwaps[i].offset;
             if (offset != 0) {
                 assembly {

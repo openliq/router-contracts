@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.9;
+pragma solidity 0.8.21;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
@@ -105,15 +105,10 @@ contract Router is Ownable2Step, ReentrancyGuard {
         swapTemp.srcAmount = _amount;
         swapTemp.transferId = _transferId;
         require(_swapData.length + _callbackData.length > 0, ErrorMessage.DATA_EMPTY);
+
         swapTemp.swapAmount = _collectFee(swapTemp.srcToken, swapTemp.srcAmount, swapTemp.transferId, integrator);
 
-        (
-            swapTemp.receiver,
-            swapTemp.target,
-            swapTemp.swapToken,
-            swapTemp.swapAmount,
-            swapTemp.callAmount
-        ) = _doSwapAndCall(_swapData, _callbackData, swapTemp.srcToken, swapTemp.swapAmount);
+        (swapTemp.receiver, swapTemp.target, swapTemp.swapToken, swapTemp.swapAmount, swapTemp.callAmount) = _doSwapAndCall(_swapData, _callbackData, swapTemp.srcToken, swapTemp.swapAmount);
 
         if (swapTemp.swapAmount > swapTemp.callAmount) {
             Helper._transfer(swapTemp.swapToken, swapTemp.receiver, (swapTemp.swapAmount - swapTemp.callAmount));
@@ -134,18 +129,18 @@ contract Router is Ownable2Step, ReentrancyGuard {
 
     function getFee(
         address integrator,
-        address inpputToken,
+        address inputToken,
         uint256 inputAmount
     ) external view returns (address feeToken, uint256 amount, uint256 nativeAmount) {
-        return feeManager.getFee(integrator, inpputToken, inputAmount);
+        return feeManager.getFee(integrator, inputToken, inputAmount);
     }
 
     function getAmountBeforeFee(
         address integrator,
-        address inpputToken,
+        address inputToken,
         uint256 inputAmount
     ) external view returns (address feeToken, uint256 beforeAmount) {
-        return feeManager.getAmountBeforeFee(integrator, inpputToken, inputAmount);
+        return feeManager.getAmountBeforeFee(integrator, inputToken, inputAmount);
     }
 
     function _doSwapAndCall(
@@ -183,10 +178,12 @@ contract Router is Ownable2Step, ReentrancyGuard {
         address integrator
     ) internal returns (uint256 _remain) {
         if (address(feeManager) == address(0)) return (_amount);
+
         address feeToken;
         uint256 _nativeFee;
         uint256 _fee;
         _remain = _amount;
+
         (feeToken, _fee, _nativeFee) = feeManager.getFee(integrator, _token, _amount);
         if (feeToken == _token && Helper._isNative(feeToken)) {
             require(msg.value >= _fee + _nativeFee, ErrorMessage.FEE_MISMATCH);
@@ -199,7 +196,7 @@ contract Router is Ownable2Step, ReentrancyGuard {
         } else {
             require(msg.value >= _nativeFee, ErrorMessage.FEE_MISMATCH);
             if (_fee != 0) {
-                SafeERC20.safeTransferFrom(IERC20(_token), msg.sender, address(this), _fee);
+                SafeERC20.safeTransferFrom(IERC20(feeToken), msg.sender, address(this), _fee);
             }
         }
         if (_fee != 0 && !Helper._isNative(feeToken)) {
@@ -226,7 +223,8 @@ contract Router is Ownable2Step, ReentrancyGuard {
         require(approved[_swap.executor] || _swap.executor == wToken, ErrorMessage.NO_APPROVE);
         if (_swap.executor == wToken) {
             bytes4 sig = Helper._getFirst4Bytes(_swap.data);
-            //0x2e1a7d4d -> withdraw(uint256 wad)  0xd0e30db0 -> deposit()
+            // 0x2e1a7d4d -> withdraw(uint256 wad)
+            // 0xd0e30db0 -> deposit()
             if (sig != bytes4(0x2e1a7d4d) && sig != bytes4(0xd0e30db0)) {
                 return (false, _srcToken, 0);
             }

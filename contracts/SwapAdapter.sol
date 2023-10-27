@@ -41,7 +41,7 @@ contract SwapAdapter is Ownable2Step, ReentrancyGuard {
     );
 
     constructor(address _owner) {
-        require(_owner != Helper.ZERO_ADDRESS, "ButterAgg: zero addr");
+        require(_owner != Helper.ZERO_ADDRESS, "Adapter: zero addr");
         _transferOwnership(_owner);
     }
 
@@ -49,7 +49,7 @@ contract SwapAdapter is Ownable2Step, ReentrancyGuard {
     // Approve the amount you want to trade.
     // DexType 0 - AGG, 1 - UNIV2, 2 - UNIV3, 3 - CURVE
     function swap(Param calldata params) external payable nonReentrant returns (uint256 outAmount) {
-        require(params.swaps.length > 0, "OpenliqAgg: empty swap data");
+        require(params.swaps.length > 0, "Adapter: empty swap data");
 
         (uint256 amount, uint256 initInputTokenBalance) = _depositToken(params.srcToken);
         uint256 finalTokenAmount = Helper._getBalance(params.dstToken, address(this));
@@ -83,7 +83,7 @@ contract SwapAdapter is Ownable2Step, ReentrancyGuard {
             }
         }
         outAmount = Helper._getBalance(params.dstToken, address(this)) - finalTokenAmount;
-        require(outAmount >= params.minAmount, "OpenliqAgg: swap received too low");
+        require(outAmount >= params.minAmount, "Adapter: swap received too low");
         uint256 left = Helper._getBalance(params.srcToken, address(this)) - initInputTokenBalance;
         if (left > 0) {
             Helper._transfer(params.srcToken, params.leftReceiver, left);
@@ -102,7 +102,7 @@ contract SwapAdapter is Ownable2Step, ReentrancyGuard {
             amount = IERC20(_token).allowance(msg.sender, address(this));
             SafeERC20.safeTransferFrom(IERC20(_token), msg.sender, address(this), amount);
         }
-        require(amount > 0, "OpenliqAgg: zero input");
+        require(amount > 0, "Adapter: zero input");
     }
 
     function _reBuildSwaps(
@@ -118,7 +118,7 @@ contract SwapAdapter is Ownable2Step, ReentrancyGuard {
             }
         }
         if (total > _amount) {
-            require(count > 0, "OpenliqAgg: cannot adjust");
+            require(count > 0, "Adapter: cannot adjust");
             isUp = false;
             uint256 margin = total - _amount;
             amountAdjust = margin / count;

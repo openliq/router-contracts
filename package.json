@@ -13,7 +13,7 @@
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "format": "prettier --print-width 120 --write ./contracts ./scripts ./tasks ./test"
+    "format": "prettier --print-width 120 --tab-width 4 --write ./contracts ./scripts ./tasks ./test"
   },
   "repository": {
     "type": "git",

@@ -25,14 +25,14 @@ async function create(salt, bytecode, param){
             console.log("deployed to :", addr);
             redeploy = true;
         } else {
-            console.log("deploy fail");
-            throw "deploy fail";
+            console.log("deploy failed");
+            throw "deploy failed";
         }
     } else {
-        console.log("already deploy, please change the salt if if want to deploy another contract ...");
+        console.log("already deployed, please change the salt if want to deploy another contract ...");
     }
 
-    return [addr,redeploy];
+    return [addr, redeploy];
 }
 
 async function createZk(contractName,args,hre){
