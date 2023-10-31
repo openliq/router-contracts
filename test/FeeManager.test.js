@@ -26,28 +26,44 @@ describe("FeeManager", function () {
         await deployFixture();
         expect(await feeManager.owner()).eq(wallet.address);
         let feeStruct = await feeManager.feeStruct();
-        expect(feeStruct.feeType).eq(0);
-        expect(feeStruct.platformTokenFee).eq(0);
-        expect(feeStruct.fixedPlatformNativeFee).eq(0);
+        expect(feeStruct.receiver).eq(ethers.constants.AddressZero);
+        expect(feeStruct.tokenFeeRate).eq(0);
+        expect(feeStruct.fixedNative).eq(0);
+        expect(feeStruct.share).eq(0);
     });
 
     it("initialFeeStruct", async () => {
         let [wallet, other] = await ethers.getSigners();
         await deployFixture();
-        await expect(feeManager.connect(other).initialFeeStruct(1, 1000, 1000)).to.be.revertedWith(
+        let feeStruct = {
+            receiver: other.address,
+            tokenFeeRate: 10,
+            fixedNative: "100000000000",
+            share: "6000",
+        };
+        await expect(feeManager.connect(other).initialFeeStruct(feeStruct)).to.be.revertedWith(
             "Ownable: caller is not the owner"
         );
-        await expect(feeManager.connect(wallet).initialFeeStruct(2, 1000, 10000)).to.be.revertedWith(
-            "FeeManager: invalid platformTokenFee"
+        feeStruct.receiver = ethers.constants.AddressZero;
+        await expect(feeManager.connect(wallet).initialFeeStruct(feeStruct)).to.be.revertedWith("Router: zero addr");
+        feeStruct.receiver = other.address;
+        feeStruct.tokenFeeRate = 10001;
+        await expect(feeManager.connect(wallet).initialFeeStruct(feeStruct)).to.be.revertedWith(
+            "FeeManager: invalid tokenFeeRate"
         );
-        await expect(feeManager.connect(wallet).initialFeeStruct(1, 1000, 10000)).to.emit(
-            feeManager,
-            "InitialFeeStruct"
+        feeStruct.tokenFeeRate = 10;
+        feeStruct.share = 10001;
+        await expect(feeManager.connect(wallet).initialFeeStruct(feeStruct)).to.be.revertedWith(
+            "FeeManager: invalid  share"
         );
-        let feeStruct = await feeManager.feeStruct();
-        expect(feeStruct.feeType).eq(1);
-        expect(feeStruct.platformTokenFee).eq(10000);
-        expect(feeStruct.fixedPlatformNativeFee).eq(1000);
+        feeStruct.share = 6000;
+        await expect(feeManager.connect(wallet).initialFeeStruct(feeStruct)).to.emit(feeManager, "InitialFeeStruct");
+
+        let f = await feeManager.feeStruct();
+        expect(feeStruct.receiver).eq(f.receiver);
+        expect(feeStruct.tokenFeeRate).eq(f.tokenFeeRate);
+        expect(feeStruct.fixedNative).eq(f.fixedNative);
+        expect(feeStruct.share).eq(f.share);
     });
 
     it("setIntegratorFees", async () => {
@@ -55,11 +71,10 @@ describe("FeeManager", function () {
         await deployFixture();
 
         let feeInfo = {
-            feeType: 1,
-            tokenFee: 100,
-            platformTokenShare: 100,
-            platformNativeShare: 100,
-            fixedNativeAmount: 100,
+            openliqReceiver: other.address,
+            fixedNative: 1000000,
+            tokenFeeRate: 100,
+            share: 6000,
         };
         await expect(feeManager.connect(other).setIntegratorFees(wallet.address, feeInfo)).to.be.revertedWith(
             "Ownable: caller is not the owner"
@@ -67,324 +82,78 @@ describe("FeeManager", function () {
         await expect(
             feeManager.connect(wallet).setIntegratorFees(ethers.constants.AddressZero, feeInfo)
         ).to.be.revertedWith("Router: zero addr");
-        feeInfo.feeType = 2;
-        feeInfo.tokenFee = 10000;
+        feeInfo.openliqReceiver = ethers.constants.AddressZero;
         await expect(feeManager.connect(wallet).setIntegratorFees(wallet.address, feeInfo)).to.be.revertedWith(
-            "FeeManager: invalid tokenFee"
+            "Router: zero addr"
         );
-        feeInfo.feeType = 2;
-        feeInfo.tokenFee = 100;
-        feeInfo.platformTokenShare = 10000;
+        feeInfo.openliqReceiver = other.address;
+        feeInfo.tokenFeeRate = 10001;
         await expect(feeManager.connect(wallet).setIntegratorFees(wallet.address, feeInfo)).to.be.revertedWith(
-            "FeeManager: invalid platformTokenShare"
+            "FeeManager: invalid integrator tokenFeeRate"
         );
-        feeInfo.platformTokenShare = 100;
-        feeInfo.platformNativeShare = 10000;
+        feeInfo.tokenFeeRate = 10;
+        feeInfo.share = 10001;
         await expect(feeManager.connect(wallet).setIntegratorFees(wallet.address, feeInfo)).to.be.revertedWith(
-            "FeeManager: invalid platformNativeShare"
+            "FeeManager: invalid integrator share"
         );
-        feeInfo.platformNativeShare = 100;
+
+        feeInfo.share = 6000;
         await expect(feeManager.connect(wallet).setIntegratorFees(wallet.address, feeInfo)).to.emit(
             feeManager,
             "SetIntegratorFees"
         );
-        let integratorFeeInfo = await feeManager.integratorFeeInfo(wallet.address);
-        expect(integratorFeeInfo.feeType).eq(feeInfo.feeType);
-        expect(integratorFeeInfo.tokenFee).eq(feeInfo.tokenFee);
-        expect(integratorFeeInfo.platformTokenShare).eq(feeInfo.platformTokenShare);
-        expect(integratorFeeInfo.platformNativeShare).eq(feeInfo.platformNativeShare);
-        expect(integratorFeeInfo.fixedNativeAmount).eq(feeInfo.fixedNativeAmount);
+        let integratorFeeInfo = await feeManager.integratorToFeeInfo(wallet.address);
+        expect(integratorFeeInfo.openliqReceiver).eq(feeInfo.openliqReceiver);
+        expect(integratorFeeInfo.fixedNative).eq(feeInfo.fixedNative);
+        expect(integratorFeeInfo.tokenFeeRate).eq(feeInfo.tokenFeeRate);
+        expect(integratorFeeInfo.share).eq(feeInfo.share);
     });
 
-    it("getFee -> erc20 FeeStruct fixed", async () => {
+    it("getAmountBeforeFee", async () => {
         let [wallet, other] = await ethers.getSigners();
         await deployFixture();
-
-        await expect(feeManager.connect(wallet).initialFeeStruct(1, 1000, 10000)).to.emit(
-            feeManager,
-            "InitialFeeStruct"
-        );
-
-        let fee = await feeManager.getFee(wallet.address, token.address, 90000);
-
-        expect(fee.feeToken).eq(token.address);
-        expect(fee.nativeAmount).eq(1000);
-        expect(fee.amount).eq(10000);
-    });
-
-    it("getFee -> erc20 FeeStruct RATIO", async () => {
-        let [wallet, other] = await ethers.getSigners();
-        await deployFixture();
-
-        await expect(feeManager.connect(wallet).initialFeeStruct(2, 10000, 1000)).to.emit(
-            feeManager,
-            "InitialFeeStruct"
-        );
-
-        let fee = await feeManager.getFee(wallet.address, token.address, 90000);
-
-        expect(fee.feeToken).eq(token.address);
-        expect(fee.nativeAmount).eq(10000);
-        expect(fee.amount).eq((90000 * 1000) / 10000);
-    });
-
-    it("getFee -> native FeeStruct fixed", async () => {
-        let [wallet, other] = await ethers.getSigners();
-        await deployFixture();
-
-        await expect(feeManager.connect(wallet).initialFeeStruct(1, 1000, 10000)).to.emit(
-            feeManager,
-            "InitialFeeStruct"
-        );
-
-        let fee = await feeManager.getFee(wallet.address, ethers.constants.AddressZero, 90000);
-
-        expect(fee.feeToken).eq(ethers.constants.AddressZero);
-        expect(fee.nativeAmount).eq(1000 + 10000);
-        expect(fee.amount).eq(0);
-    });
-
-    it("getFee -> native FeeStruct RATIO", async () => {
-        let [wallet, other] = await ethers.getSigners();
-        await deployFixture();
-
-        await expect(feeManager.connect(wallet).initialFeeStruct(2, 10000, 1000)).to.emit(
-            feeManager,
-            "InitialFeeStruct"
-        );
-
-        let fee = await feeManager.getFee(wallet.address, ethers.constants.AddressZero, 90000);
-
-        expect(fee.feeToken).eq(ethers.constants.AddressZero);
-        expect(fee.nativeAmount).eq(10000 + (90000 * 1000) / 10000);
-        expect(fee.amount).eq(0);
-    });
-
-    it("getFee -> erc20 Integrator fixed", async () => {
-        let [wallet, other] = await ethers.getSigners();
-        await deployFixture();
-        let feeInfo = {
-            feeType: 1,
-            tokenFee: 100,
-            platformTokenShare: 200,
-            platformNativeShare: 300,
-            fixedNativeAmount: 400,
+        let feeStruct = {
+            receiver: other.address,
+            tokenFeeRate: 100,
+            fixedNative: "100000000000",
+            share: "6000",
         };
-        await expect(feeManager.connect(wallet).setIntegratorFees(wallet.address, feeInfo)).to.emit(
-            feeManager,
-            "SetIntegratorFees"
-        );
 
-        let fee = await feeManager.getFee(wallet.address, token.address, 90000);
-
-        expect(fee.feeToken).eq(token.address);
-        expect(fee.nativeAmount).eq(400);
-        expect(fee.amount).eq(100);
-    });
-
-    it("getFee -> erc20 Integrator RATIO", async () => {
-        let [wallet, other] = await ethers.getSigners();
-        await deployFixture();
+        await expect(feeManager.connect(wallet).initialFeeStruct(feeStruct)).to.emit(feeManager, "InitialFeeStruct");
 
         let feeInfo = {
-            feeType: 2,
-            tokenFee: 100,
-            platformTokenShare: 200,
-            platformNativeShare: 300,
-            fixedNativeAmount: 400,
+            openliqReceiver: other.address,
+            fixedNative: "100000000000",
+            tokenFeeRate: 100,
+            share: 6000,
         };
+
         await expect(feeManager.connect(wallet).setIntegratorFees(wallet.address, feeInfo)).to.emit(
             feeManager,
             "SetIntegratorFees"
         );
 
-        let fee = await feeManager.getFee(wallet.address, token.address, 90000);
+        let amount = ethers.utils.parseEther("1000");
+        console.log(amount);
+        let before = await feeManager.getAmountBeforeFee(other.address, token.address, amount, 150);
+        console.log(before.beforeAmount);
+        let fee = await feeManager.getFee(other.address, token.address, before.beforeAmount, 150);
+        console.log("1====", before.beforeAmount.sub(fee.openLiqToken.add(fee.integratorToken)));
 
-        expect(fee.feeToken).eq(token.address);
-        expect(fee.nativeAmount).eq(400);
-        expect(fee.amount).eq((90000 * 100) / 10000);
-    });
+        before = await feeManager.getAmountBeforeFee(wallet.address, token.address, amount, 150);
+        console.log(before.beforeAmount);
+        fee = await feeManager.getFee(wallet.address, token.address, before.beforeAmount, 150);
+        console.log(fee.openLiqToken.add(fee.integratorToken));
+        console.log("2====", before.beforeAmount.sub(fee.openLiqToken.add(fee.integratorToken)));
 
-    it("getFee -> native Integrator fixed", async () => {
-        let [wallet, other] = await ethers.getSigners();
-        await deployFixture();
-        let feeInfo = {
-            feeType: 1,
-            tokenFee: 100,
-            platformTokenShare: 200,
-            platformNativeShare: 300,
-            fixedNativeAmount: 400,
-        };
-        await expect(feeManager.connect(wallet).setIntegratorFees(wallet.address, feeInfo)).to.emit(
-            feeManager,
-            "SetIntegratorFees"
-        );
+        before = await feeManager.getAmountBeforeFee(other.address, ethers.constants.AddressZero, amount, 150);
+        console.log(before.beforeAmount);
+        fee = await feeManager.getFee(other.address, ethers.constants.AddressZero, before.beforeAmount, 150);
+        console.log("3====", before.beforeAmount.sub(fee.openLiqToken.add(fee.integratorToken.add(fee.openliqNative))));
 
-        let fee = await feeManager.getFee(wallet.address, ethers.constants.AddressZero, 90000);
-
-        expect(fee.feeToken).eq(ethers.constants.AddressZero);
-        expect(fee.nativeAmount).eq(400 + 100);
-        expect(fee.amount).eq(0);
-    });
-
-    it("getFee -> native Integrator RATIO", async () => {
-        let [wallet, other] = await ethers.getSigners();
-        await deployFixture();
-        let feeInfo = {
-            feeType: 2,
-            tokenFee: 100,
-            platformTokenShare: 200,
-            platformNativeShare: 300,
-            fixedNativeAmount: 400,
-        };
-        await expect(feeManager.connect(wallet).setIntegratorFees(wallet.address, feeInfo)).to.emit(
-            feeManager,
-            "SetIntegratorFees"
-        );
-
-        let fee = await feeManager.getFee(wallet.address, ethers.constants.AddressZero, 90000);
-
-        expect(fee.feeToken).eq(ethers.constants.AddressZero);
-        expect(fee.nativeAmount).eq(400 + (90000 * 100) / 10000);
-        expect(fee.amount).eq(0);
-    });
-
-    it("getAmountBeforeFee -> erc20 FeeStruct fixed", async () => {
-        let [wallet, other] = await ethers.getSigners();
-        await deployFixture();
-
-        await expect(feeManager.connect(wallet).initialFeeStruct(1, 1000, 2000)).to.emit(
-            feeManager,
-            "InitialFeeStruct"
-        );
-        let before = await feeManager.getAmountBeforeFee(wallet.address, token.address, 10000);
-        expect(before.feeToken).eq(token.address);
-        let fee = await feeManager.getFee(wallet.address, token.address, before.beforeAmount);
-        expect(fee.amount.add(10000)).eq(before.beforeAmount);
-    });
-
-    it("getAmountBeforeFee -> erc20 FeeStruct RATIO", async () => {
-        let [wallet, other] = await ethers.getSigners();
-        await deployFixture();
-
-        await expect(feeManager.connect(wallet).initialFeeStruct(2, 1000, 2000)).to.emit(
-            feeManager,
-            "InitialFeeStruct"
-        );
-        let before = await feeManager.getAmountBeforeFee(wallet.address, token.address, 10000);
-        expect(before.feeToken).eq(token.address);
-        let fee = await feeManager.getFee(wallet.address, token.address, before.beforeAmount);
-
-        expect(fee.amount.add(10000 + 1)).eq(before.beforeAmount);
-    });
-
-    it("getAmountBeforeFee -> native FeeStruct fixed", async () => {
-        let [wallet, other] = await ethers.getSigners();
-        await deployFixture();
-
-        await expect(feeManager.connect(wallet).initialFeeStruct(1, 1000, 2000)).to.emit(
-            feeManager,
-            "InitialFeeStruct"
-        );
-        let before = await feeManager.getAmountBeforeFee(wallet.address, ethers.constants.AddressZero, 10000);
-        expect(before.feeToken).eq(ethers.constants.AddressZero);
-        let fee = await feeManager.getFee(wallet.address, ethers.constants.AddressZero, before.beforeAmount);
-
-        expect(fee.nativeAmount.add(10000)).eq(before.beforeAmount);
-    });
-
-    it("getAmountBeforeFee -> native FeeStruct RATIO", async () => {
-        let [wallet, other] = await ethers.getSigners();
-        await deployFixture();
-
-        await expect(feeManager.connect(wallet).initialFeeStruct(2, 1000, 2000)).to.emit(
-            feeManager,
-            "InitialFeeStruct"
-        );
-        let before = await feeManager.getAmountBeforeFee(wallet.address, ethers.constants.AddressZero, 10000);
-        expect(before.feeToken).eq(ethers.constants.AddressZero);
-        let fee = await feeManager.getFee(wallet.address, ethers.constants.AddressZero, before.beforeAmount);
-
-        expect(fee.nativeAmount.add(10000 + 1)).eq(before.beforeAmount);
-    });
-
-    it("getAmountBeforeFee -> erc20 Integrator fixed", async () => {
-        let [wallet, other] = await ethers.getSigners();
-        await deployFixture();
-        let feeInfo = {
-            feeType: 1,
-            tokenFee: 100,
-            platformTokenShare: 200,
-            platformNativeShare: 300,
-            fixedNativeAmount: 400,
-        };
-        await expect(feeManager.connect(wallet).setIntegratorFees(wallet.address, feeInfo)).to.emit(
-            feeManager,
-            "SetIntegratorFees"
-        );
-        let before = await feeManager.getAmountBeforeFee(wallet.address, token.address, 10000);
-        let fee = await feeManager.getFee(wallet.address, token.address, before.beforeAmount);
-        expect(before.feeToken).eq(token.address);
-        expect(fee.amount.add(10000)).eq(before.beforeAmount);
-    });
-
-    it("getAmountBeforeFee -> erc20 Integrator RATIO", async () => {
-        let [wallet, other] = await ethers.getSigners();
-        await deployFixture();
-        let feeInfo = {
-            feeType: 2,
-            tokenFee: 100,
-            platformTokenShare: 200,
-            platformNativeShare: 300,
-            fixedNativeAmount: 400,
-        };
-        await expect(feeManager.connect(wallet).setIntegratorFees(wallet.address, feeInfo)).to.emit(
-            feeManager,
-            "SetIntegratorFees"
-        );
-        let before = await feeManager.getAmountBeforeFee(wallet.address, token.address, 10000);
-        let fee = await feeManager.getFee(wallet.address, token.address, before.beforeAmount);
-        expect(before.feeToken).eq(token.address);
-        expect(fee.amount.add(10000 + 1)).eq(before.beforeAmount);
-    });
-
-    it("getAmountBeforeFee -> native Integrator fixed", async () => {
-        let [wallet, other] = await ethers.getSigners();
-        await deployFixture();
-        let feeInfo = {
-            feeType: 1,
-            tokenFee: 100,
-            platformTokenShare: 200,
-            platformNativeShare: 300,
-            fixedNativeAmount: 400,
-        };
-        await expect(feeManager.connect(wallet).setIntegratorFees(wallet.address, feeInfo)).to.emit(
-            feeManager,
-            "SetIntegratorFees"
-        );
-        let before = await feeManager.getAmountBeforeFee(wallet.address, ethers.constants.AddressZero, 10000);
-        let fee = await feeManager.getFee(wallet.address, ethers.constants.AddressZero, before.beforeAmount);
-        expect(before.feeToken).eq(ethers.constants.AddressZero);
-        expect(fee.nativeAmount.add(10000)).eq(before.beforeAmount);
-    });
-
-    it("getAmountBeforeFee -> native Integrator RATIO", async () => {
-        let [wallet, other] = await ethers.getSigners();
-        await deployFixture();
-        let feeInfo = {
-            feeType: 2,
-            tokenFee: 100,
-            platformTokenShare: 200,
-            platformNativeShare: 300,
-            fixedNativeAmount: 400,
-        };
-        await expect(feeManager.connect(wallet).setIntegratorFees(wallet.address, feeInfo)).to.emit(
-            feeManager,
-            "SetIntegratorFees"
-        );
-        let before = await feeManager.getAmountBeforeFee(wallet.address, ethers.constants.AddressZero, 10000);
-        let fee = await feeManager.getFee(wallet.address, ethers.constants.AddressZero, before.beforeAmount);
-        expect(before.feeToken).eq(ethers.constants.AddressZero);
-        expect(fee.nativeAmount.add(10000 + 1)).eq(before.beforeAmount);
+        before = await feeManager.getAmountBeforeFee(wallet.address, ethers.constants.AddressZero, amount, 150);
+        console.log(before.beforeAmount);
+        fee = await feeManager.getFee(wallet.address, ethers.constants.AddressZero, before.beforeAmount, 150);
+        console.log("4====", before.beforeAmount.sub(fee.openLiqToken.add(fee.integratorToken.add(fee.openliqNative))));
     });
 });

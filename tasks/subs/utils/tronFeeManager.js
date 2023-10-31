@@ -16,7 +16,7 @@ exports.deployFeeManager = async function (artifacts, network) {
     return feeManager;
 };
 
-exports.initialFeeStruct = async function (artifacts, network, feeType, fixedPlatformNativeFee, platformTokenFee) {
+exports.initialFeeStruct = async function (artifacts, network, receiver, tokenFeeRate, fixedNative, share) {
     let tronWeb = await getTronWeb(network);
     let deployer = "0x" + tronWeb.defaultAddress.hex.substring(2);
     console.log("deployer :", tronWeb.address.fromHex(deployer));
@@ -30,7 +30,8 @@ exports.initialFeeStruct = async function (artifacts, network, feeType, fixedPla
         address = tronWeb.address.fromHex(address);
     }
     let feeManager = await tronWeb.contract(FeeManager.abi, address);
-    let result = await feeManager.initialFeeStruct(feeType, fixedPlatformNativeFee, platformTokenFee).send();
+    let fee = [receiver, tokenFeeRate, fixedNative, share];
+    let result = await feeManager.initialFeeStruct(fee).send();
     console.log(result);
 };
 
@@ -38,11 +39,10 @@ exports.setIntegratorFees = async function (
     artifacts,
     network,
     integrator,
-    feeType,
-    tokenFee,
-    platformTokenShare,
-    platformNativeShare,
-    fixedNativeAmount
+    openliqReceiver,
+    fixedNative,
+    tokenFeeRate,
+    share
 ) {
     let tronWeb = await getTronWeb(network);
     let deployer = "0x" + tronWeb.defaultAddress.hex.substring(2);
@@ -57,26 +57,7 @@ exports.setIntegratorFees = async function (
         address = tronWeb.address.fromHex(address);
     }
     let feeManager = await tronWeb.contract(FeeManager.abi, address);
-    let fee = [feeType, tokenFee, platformTokenShare, platformNativeShare, fixedNativeAmount];
+    let fee = [openliqReceiver, fixedNative, tokenFeeRate, share];
     let result = await feeManager.setIntegratorFees(integrator, fee).send();
-    console.log(result);
-};
-
-exports.withdrawPlatformFees = async function (artifacts, network, tokens) {
-    let tronWeb = await getTronWeb(network);
-    let deployer = "0x" + tronWeb.defaultAddress.hex.substring(2);
-    console.log("deployer :", tronWeb.address.fromHex(deployer));
-    let deploy = await readFromFile(network);
-    if (!deploy[network]["FeeManager"]) {
-        throw "FeeManager not deploy";
-    }
-    let FeeManager = await artifacts.readArtifact("FeeManager");
-    let address = deploy[network]["FeeManager"];
-    if (address.startsWith("0x")) {
-        address = tronWeb.address.fromHex(address);
-    }
-    let feeManager = await tronWeb.contract(FeeManager.abi, address);
-    let tokenList = tokens.split(",");
-    let result = await feeManager.withdrawPlatformFees(tokenList).send();
     console.log(result);
 };
