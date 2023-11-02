@@ -27,7 +27,8 @@ contract Router is Ownable2Step, ReentrancyGuard {
         address indexed token,
         address indexed receiver,
         address indexed integrator,
-        uint256 amount,
+        uint256 openliqAmount,
+        uint256 integratorAmount,
         uint256 nativeAmount,
         bytes32 transferId
     );
@@ -106,8 +107,14 @@ contract Router is Ownable2Step, ReentrancyGuard {
         swapTemp.srcAmount = _amount;
         swapTemp.transferId = _transferId;
         require(_swapData.length + _callbackData.length > 0, ErrorMessage.DATA_EMPTY);
-        swapTemp.swapAmount = _collectFee(swapTemp.srcToken, swapTemp.srcAmount, swapTemp.transferId, _referrer);
-        (swapTemp.receiver, swapTemp.target, swapTemp.swapToken, swapTemp.swapAmount, swapTemp.callAmount) = _doSwapAndCall(_swapData, _callbackData, swapTemp.srcToken, swapTemp.swapAmount);
+        swapTemp.swapAmount = _collectFee(swapTemp.srcToken, swapTemp.srcAmount, swapTemp.transferId, _referrer, _fee);
+        (
+            swapTemp.receiver,
+            swapTemp.target,
+            swapTemp.swapToken,
+            swapTemp.swapAmount,
+            swapTemp.callAmount
+        ) = _doSwapAndCall(_swapData, _callbackData, swapTemp.srcToken, swapTemp.swapAmount);
 
         if (swapTemp.swapAmount > swapTemp.callAmount) {
             Helper._transfer(swapTemp.swapToken, swapTemp.receiver, (swapTemp.swapAmount - swapTemp.callAmount));
@@ -132,7 +139,15 @@ contract Router is Ownable2Step, ReentrancyGuard {
         address referrer,
         uint256 fee
     ) external view returns (address feeToken, uint256 amount, uint256 nativeAmount) {
-        return feeManager.getFee(referrer, inputToken, inputAmount);
+        IFeeManager.FeeDetail memory fd = feeManager.getFee(referrer, inputToken, inputAmount, fee);
+        feeToken = fd.feeToken;
+        if (Helper._isNative(inputToken)) {
+            amount = 0;
+            nativeAmount = fd.openliqNative + fd.openLiqToken + fd.integratorToken;
+        } else {
+            amount = fd.openLiqToken + fd.integratorToken;
+            nativeAmount = fd.openliqNative;
+        }
     }
 
     function getAmountBeforeFee(
@@ -141,7 +156,7 @@ contract Router is Ownable2Step, ReentrancyGuard {
         address referrer,
         uint256 fee
     ) external view returns (address feeToken, uint256 beforeAmount) {
-        return feeManager.getAmountBeforeFee(referrer, inputToken, inputAmount);
+        return feeManager.getAmountBeforeFee(referrer, inputToken, inputAmount, fee);
     }
 
     function _doSwapAndCall(
@@ -175,36 +190,44 @@ contract Router is Ownable2Step, ReentrancyGuard {
     function _collectFee(
         address _token,
         uint256 _amount,
-        bytes32 transferId,
-        address integrator
+        bytes32 _transferId,
+        address _referrer,
+        uint256 _fee
     ) internal returns (uint256 _remain) {
+        // _token == fd.feeToken
         if (address(feeManager) == address(0)) return (_amount);
-
-        address feeToken;
-        uint256 _nativeFee;
-        uint256 _fee;
-        _remain = _amount;
-
-        (feeToken, _fee, _nativeFee) = feeManager.getFee(integrator, _token, _amount);
-        if (feeToken == _token && Helper._isNative(feeToken)) {
-            require(msg.value >= _fee + _nativeFee, ErrorMessage.FEE_MISMATCH);
-            _remain = _amount - _fee - _nativeFee;
-        } else if (Helper._isNative(feeToken)) {
-            require(msg.value >= _fee + _nativeFee, ErrorMessage.FEE_MISMATCH);
-        } else if (feeToken == _token) {
-            require(msg.value >= _nativeFee, ErrorMessage.FEE_MISMATCH);
-            _remain = _amount - _fee;
-        } else {
-            require(msg.value >= _nativeFee, ErrorMessage.FEE_MISMATCH);
-            if (_fee != 0) {
-                SafeERC20.safeTransferFrom(IERC20(feeToken), msg.sender, address(this), _fee);
+        IFeeManager.FeeDetail memory fd = feeManager.getFee(_referrer, _token, _amount, _fee);
+        if (Helper._isNative(_token)) {
+            uint256 openliqNative = fd.openliqNative + fd.openLiqToken;
+            if (openliqNative > 0) {
+                Helper._transfer(_token, fd.openliqReceiver, fd.openliqNative + fd.openLiqToken);
             }
+            if (fd.integratorToken > 0) {
+                Helper._transfer(_token, _referrer, fd.integratorToken);
+            }
+            _remain = _amount - openliqNative - fd.integratorToken;
+        } else {
+            if (fd.openliqNative > 0) {
+                Helper._transfer(Helper.ZERO_ADDRESS, fd.openliqReceiver, fd.openliqNative);
+            }
+            if (fd.openLiqToken > 0) {
+                Helper._transfer(_token, fd.openliqReceiver, fd.openLiqToken);
+            }
+
+            if (fd.integratorToken > 0) {
+                Helper._transfer(_token, _referrer, fd.integratorToken);
+            }
+            _remain = _amount - fd.openLiqToken - fd.integratorToken;
         }
-        if (_fee != 0 && !Helper._isNative(feeToken)) {
-            SafeERC20.safeApprove(IERC20(_token), address(feeManager), _fee);
-        }
-        feeManager.payFeeWithIntegrator{value: _nativeFee}(integrator, _token, _amount);
-        emit CollectFee(feeToken, address(feeManager), integrator, _fee, _nativeFee, transferId);
+        emit CollectFee(
+            _token,
+            fd.openliqReceiver,
+            _referrer,
+            fd.openLiqToken,
+            fd.openLiqToken,
+            fd.openliqNative,
+            _transferId
+        );
     }
 
     function _callBack(
