@@ -143,10 +143,10 @@ contract Router is Ownable2Step, ReentrancyGuard {
         feeToken = fd.feeToken;
         if (Helper._isNative(inputToken)) {
             amount = 0;
-            nativeAmount = fd.openliqNative + fd.openLiqToken + fd.integratorToken;
+            nativeAmount = fd.routerNative + fd.routerToken + fd.integratorToken;
         } else {
-            amount = fd.openLiqToken + fd.integratorToken;
-            nativeAmount = fd.openliqNative;
+            amount = fd.routerToken + fd.integratorToken;
+            nativeAmount = fd.routerNative;
         }
     }
 
@@ -198,34 +198,34 @@ contract Router is Ownable2Step, ReentrancyGuard {
         if (address(feeManager) == address(0)) return (_amount);
         IFeeManager.FeeDetail memory fd = feeManager.getFee(_referrer, _token, _amount, _fee);
         if (Helper._isNative(_token)) {
-            uint256 openliqNative = fd.openliqNative + fd.openLiqToken;
+            uint256 openliqNative = fd.routerNative + fd.routerToken;
             if (openliqNative > 0) {
-                Helper._transfer(_token, fd.openliqReceiver, fd.openliqNative + fd.openLiqToken);
+                Helper._transfer(_token, fd.routerReceiver, fd.routerNative + fd.routerToken);
             }
             if (fd.integratorToken > 0) {
                 Helper._transfer(_token, _referrer, fd.integratorToken);
             }
             _remain = _amount - openliqNative - fd.integratorToken;
         } else {
-            if (fd.openliqNative > 0) {
-                Helper._transfer(Helper.ZERO_ADDRESS, fd.openliqReceiver, fd.openliqNative);
+            if (fd.routerNative > 0) {
+                Helper._transfer(Helper.ZERO_ADDRESS, fd.routerReceiver, fd.routerNative);
             }
-            if (fd.openLiqToken > 0) {
-                Helper._transfer(_token, fd.openliqReceiver, fd.openLiqToken);
+            if (fd.routerToken > 0) {
+                Helper._transfer(_token, fd.routerReceiver, fd.routerToken);
             }
 
             if (fd.integratorToken > 0) {
                 Helper._transfer(_token, _referrer, fd.integratorToken);
             }
-            _remain = _amount - fd.openLiqToken - fd.integratorToken;
+            _remain = _amount - fd.routerToken - fd.integratorToken;
         }
         emit CollectFee(
             _token,
-            fd.openliqReceiver,
+            fd.routerReceiver,
             _referrer,
-            fd.openLiqToken,
-            fd.openLiqToken,
-            fd.openliqNative,
+            fd.routerToken,
+            fd.routerToken,
+            fd.routerNative,
             _transferId
         );
     }

@@ -388,7 +388,9 @@ let config = new Map(
         ["Tron",{
             wToken:"TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR",
             executors:[
-                "TFVisXFaijZfeyeSjCEVkHfex7HGdTxzF9",   //sun.io
+                "TFVisXFaijZfeyeSjCEVkHfex7HGdTxzF9",   // sun smart router
+                "TKzxdSv2FZKQrEqkKVgp5DcwEXBEKMg2Ax",   // sun v2 route
+                "TQAvWQpT9H916GckwWDJNhYZvQMkuRL7PN",   // sun v3 route
                 "TZ2dP5xgPrDZB9EbEgBidj3GTR272fYzqQ",   // butter
             ]
         }],
