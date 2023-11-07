@@ -1,6 +1,7 @@
 let { create, createZk, readFromFile, writeToFile } = require("../../utils/create.js");
 let { task } = require("hardhat/config");
-let { deployFeeManager, initialFeeStruct, setIntegratorFees } = require("./utils/tronFeeManager.js");
+let { deployFeeManager, initialFeeStruct, setIntegratorFee } = require("./utils/tronFeeManager.js");
+let { getFeeManagerConfig } = require("../../configs/FeeManagerConfig.js");
 
 task("feeManager:deploy", "deploy feeManager").setAction(async (taskArgs, hre) => {
     const { getNamedAccounts, ethers } = hre;
@@ -25,23 +26,36 @@ task("feeManager:deploy", "deploy feeManager").setAction(async (taskArgs, hre) =
         deploy[network.name]["FeeManager"] = feeManager;
         await writeToFile(deploy);
     }
+   await hre.run("feeManager:setRouterFeeFromConfig", {});
 });
 
-task("feeManager:initialFeeStruct", "initialFeeStruct feeManager")
+task("feeManager:setRouterFeeFromConfig", "setRouterFee feeManager").setAction(async (taskArgs, hre) => {
+    const { getNamedAccounts, ethers } = hre;
+    const { deployer } = await getNamedAccounts();
+    let feeManagerConfig = getFeeManagerConfig(network.name);
+    if (feeManagerConfig) {
+        await hre.run("feeManager:setRouterFee", {
+            receiver: feeManagerConfig.receiver,
+            fixednative: feeManagerConfig.fixedNative,
+            tokenfeerate: feeManagerConfig.tokenFeeRate,
+            routershare: feeManagerConfig.routerShare,
+            routernativeshare: feeManagerConfig.routerNativeShare,
+        });
+    } else {
+        throw "set feeManager config first";
+    }
+
+});
+
+task("feeManager:setRouterFee", "initialFeeStruct feeManager")
     .addParam("receiver", "fee receiver")
     .addParam("fixednative", "fixedNative")
     .addParam("tokenfeerate", "tokenFeeRate")
-    .addParam("share", "openliq share of toekn fee")
+    .addParam("routershare", "openliq share of toekn fee")
+    .addParam("routernativeshare", "openliq share of native fee")
     .setAction(async (taskArgs, hre) => {
         const { getNamedAccounts, ethers } = hre;
         const { deployer } = await getNamedAccounts();
-
-        let feeStruct = {
-            receiver: taskArgs.receiver,
-            tokenFeeRate: taskArgs.tokenfeerate,
-            fixedNative: taskArgs.fixednative,
-            share: taskArgs.share,
-        };
 
         if (network.name === "Tron" || network.name === "TronTest") {
             await initialFeeStruct(
@@ -50,7 +64,8 @@ task("feeManager:initialFeeStruct", "initialFeeStruct feeManager")
                 taskArgs.receiver,
                 taskArgs.fixednative,
                 taskArgs.tokenfeerate,
-                taskArgs.share
+                taskArgs.routershare,
+                taskArgs.routernativeshare
             );
         } else {
             console.log("deployer :", deployer);
@@ -61,28 +76,38 @@ task("feeManager:initialFeeStruct", "initialFeeStruct feeManager")
             console.log("feeManager  address :", deploy[network.name]["FeeManager"]);
             let FeeManager = await ethers.getContractFactory("FeeManager");
             let feeManager = FeeManager.attach(deploy[network.name]["FeeManager"]);
-            await (await feeManager.initialFeeStruct(feeStruct)).wait();
+            await (
+                await feeManager.setRouterFee(
+                    taskArgs.receiver,
+                    taskArgs.fixednative,
+                    taskArgs.tokenfeerate,
+                    taskArgs.routershare,
+                    taskArgs.routernativeshare
+                )
+            ).wait();
         }
     });
 
-task("feeManager:setIntegratorFees", "setIntegratorFees feeManager")
+task("feeManager:setIntegratorFee", "setIntegratorFees feeManager")
     .addParam("integrator", "integrator")
     .addParam("receiver", "openliq fee Receiver")
     .addParam("fixednative", "fixedNative")
     .addParam("tokenfeerate", "tokenFeeRate")
-    .addParam("share", "share")
+    .addParam("routershare", "share")
+    .addParam("routernativeshare", "openliq share of native fee")
     .setAction(async (taskArgs, hre) => {
         const { getNamedAccounts, ethers } = hre;
         const { deployer } = await getNamedAccounts();
         if (network.name === "Tron" || network.name === "TronTest") {
-            await setIntegratorFees(
+            await setIntegratorFee(
                 hre.artifacts,
                 network.name,
                 taskArgs.integrator,
                 taskArgs.receiver,
                 taskArgs.fixednative,
                 taskArgs.tokenfeerate,
-                taskArgs.share
+                taskArgs.routershare,
+                taskArgs.routernativeshare
             );
         } else {
             console.log("deployer :", deployer);
@@ -93,12 +118,16 @@ task("feeManager:setIntegratorFees", "setIntegratorFees feeManager")
             console.log("feeManager  address :", deploy[network.name]["FeeManager"]);
             let FeeManager = await ethers.getContractFactory("FeeManager");
             let feeManager = FeeManager.attach(deploy[network.name]["FeeManager"]);
-            let fee = {
-                openliqReceiver: taskArgs.receiver,
-                fixedNative: taskArgs.fixednative,
-                tokenFeeRate: taskArgs.tokenfeerate,
-                share: taskArgs.share,
-            };
-            await (await feeManager.setIntegratorFees(taskArgs.integrator, fee)).wait();
+
+            await (
+                await feeManager.setIntegratorFee(
+                    taskArgs.integrator,
+                    taskArgs.receiver,
+                    taskArgs.fixednative,
+                    taskArgs.tokenfeerate,
+                    taskArgs.routershare,
+                    taskArgs.routernativeshare
+                )
+            ).wait();
         }
     });

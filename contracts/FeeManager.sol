@@ -14,9 +14,9 @@ contract FeeManager is Ownable2Step, IFeeManager {
         uint256 fixedNative;
         uint256 tokenFeeRate;
         uint256 routerShare; // router share
+        uint256 routerNativeShare;
     }
 
-    //FeeStruct public feeStruct;
 
     // Integrator -> IntegratorFeeInfo
     mapping(address => FeeInfo) public feeInfoList;
@@ -26,10 +26,10 @@ contract FeeManager is Ownable2Step, IFeeManager {
         address indexed receiver,
         uint256 fixedNative,
         uint256 tokenRate,
-        uint256 routerShare
+        uint256 routerShare,
+        uint256 routerNativeShare
     );
 
-    //event InitialFeeStruct(FeeStruct feeStruct);
 
     constructor(address _owner) payable {
         require(_owner != Helper.ZERO_ADDRESS, ErrorMessage.ZERO_ADDR);
@@ -40,20 +40,23 @@ contract FeeManager is Ownable2Step, IFeeManager {
         address _receiver,
         uint256 _fixedNative,
         uint256 _tokenRate,
-        uint256 _routerShare
+        uint256 _routerShare,
+        uint256 _routerNativeShare
     ) external onlyOwner {
-        _setFeeRate(Helper.ZERO_ADDRESS, _receiver, _fixedNative, _tokenRate, _routerShare);
+        _setFeeRate(Helper.ZERO_ADDRESS, _receiver, _fixedNative, _tokenRate, _routerShare, _routerNativeShare);
     }
 
     function setIntegratorFee(
         address _integrator,
+        address _receiver,
         uint256 _fixedNative,
         uint256 _tokenRate,
-        uint256 _routerShare
+        uint256 _routerShare,
+        uint256 _routerNativeShare
     ) external onlyOwner {
         require(_integrator != Helper.ZERO_ADDRESS, ErrorMessage.ZERO_ADDR);
 
-        _setFeeRate(_integrator, _integrator, _fixedNative, _tokenRate, _routerShare);
+        _setFeeRate(_integrator, _receiver, _fixedNative, _tokenRate, _routerShare, _routerNativeShare);
     }
 
     function getFee(
@@ -62,6 +65,7 @@ contract FeeManager is Ownable2Step, IFeeManager {
         uint256 _inputAmount,
         uint256 _feeRate
     ) external view returns (FeeDetail memory feeDetail) {
+        require(_feeRate < FEE_DENOMINATOR);
         feeDetail.feeToken = _inputToken;
 
         FeeInfo memory info = feeInfoList[_integrator];
@@ -70,13 +74,26 @@ contract FeeManager is Ownable2Step, IFeeManager {
             if (info.receiver == Helper.ZERO_ADDRESS) {
                 return feeDetail;
             }
+            if (info.tokenFeeRate == 0) {
+                if (info.fixedNative != 0) {
+                    feeDetail.routerNative = (info.fixedNative * info.routerNativeShare) / FEE_DENOMINATOR;
+                    feeDetail.integratorNative = info.fixedNative - feeDetail.routerNative;
+                }
+            } else {
+                feeDetail.routerNative = info.fixedNative;
+            }
+        } else {
+            if (info.fixedNative != 0) {
+                feeDetail.routerNative = (info.fixedNative * info.routerNativeShare) / FEE_DENOMINATOR;
+                feeDetail.integratorNative = info.fixedNative - feeDetail.routerNative;
+            }
         }
 
-        uint256 feeRate = _feeRate;
+        uint256 feeRate = _feeRate * FEE_DENOMINATOR;
         uint256 routerRate = feeRate * info.routerShare;
-        if (_feeRate < info.tokenFeeRate) {
+        if (_feeRate < info.tokenFeeRate * FEE_DENOMINATOR) {
             // keep the router fee rate
-            routerRate = (info.tokenFeeRate * info.routerShare) / FEE_DENOMINATOR;
+            routerRate = (info.tokenFeeRate * info.routerShare);
             if (_feeRate >= routerRate) {
                 feeRate = _feeRate;
             } else {
@@ -85,11 +102,10 @@ contract FeeManager is Ownable2Step, IFeeManager {
         }
 
         if (feeRate > 0) {
-            uint256 fee = (_inputAmount * feeRate) / FEE_DENOMINATOR;
-            feeDetail.routerToken = (_inputAmount * routerRate) / FEE_DENOMINATOR;
+            uint256 fee = (_inputAmount * feeRate) / FEE_DENOMINATOR / FEE_DENOMINATOR;
+            feeDetail.routerToken = (_inputAmount * routerRate) / FEE_DENOMINATOR / FEE_DENOMINATOR;
             feeDetail.integratorToken = fee - feeDetail.routerToken;
         }
-        feeDetail.routerNative = info.fixedNative;
         feeDetail.routerReceiver = info.receiver;
     }
 
@@ -100,60 +116,35 @@ contract FeeManager is Ownable2Step, IFeeManager {
         uint256 _feeRate
     ) external view returns (address feeToken, uint256 beforeAmount) {
         require(_feeRate < FEE_DENOMINATOR);
-        FeeInfo memory f = feeInfoList[Helper.ZERO_ADDRESS];
-        FeeInfo memory info = feeInfoList[_integrator];
         feeToken = _inputToken;
-        if (info.receiver == address(0)) {
-            if (Helper._isNative(_inputToken)) {
-                _inputAmount += f.fixedNative;
+        FeeInfo memory info = feeInfoList[_integrator];
+        if (info.receiver == Helper.ZERO_ADDRESS) {
+            info = feeInfoList[Helper.ZERO_ADDRESS];
+            if (info.receiver == Helper.ZERO_ADDRESS) {
+                return (feeToken, _inputAmount);
             }
-            if (_integrator != Helper.ZERO_ADDRESS && _feeRate > 0) {
-                if (f.fixedNative == 0) {
-                    uint256 p = _feeRate + f.tokenFeeRate;
-                    beforeAmount = (_inputAmount * FEE_DENOMINATOR) / (FEE_DENOMINATOR - p) + 1;
-                } else {
-                    if (f.tokenFeeRate * FEE_DENOMINATOR > _feeRate * f.routerShare) {
-                        uint256 p = FEE_DENOMINATOR *
-                            FEE_DENOMINATOR -
-                            f.tokenFeeRate *
-                            FEE_DENOMINATOR -
-                            (FEE_DENOMINATOR - f.routerShare) *
-                            _feeRate;
-                        beforeAmount = (_inputAmount * FEE_DENOMINATOR * FEE_DENOMINATOR) / p + 1;
-                    } else {
-                        beforeAmount = (_inputAmount * FEE_DENOMINATOR) / (FEE_DENOMINATOR - _feeRate) + 1;
-                    }
-                }
+        }
+        uint256 feeRate = _feeRate * FEE_DENOMINATOR;
+        if (_feeRate < info.tokenFeeRate * FEE_DENOMINATOR) {
+            // keep the router fee rate
+            uint256 routerRate = (info.tokenFeeRate * info.routerShare);
+            if (_feeRate >= routerRate) {
+                feeRate = _feeRate;
             } else {
-                if (f.tokenFeeRate > 0) {
-                    beforeAmount = (_inputAmount * FEE_DENOMINATOR) / (FEE_DENOMINATOR - f.tokenFeeRate) + 1;
-                } else {
-                    beforeAmount = _inputAmount;
-                }
+                feeRate = routerRate;
             }
+        }
+        if (Helper._isNative(_inputToken)) {
+            _inputAmount += info.fixedNative;
+        }
+
+        if (feeRate > 0) {
+            beforeAmount =
+                (_inputAmount * FEE_DENOMINATOR * FEE_DENOMINATOR) /
+                (FEE_DENOMINATOR * FEE_DENOMINATOR - feeRate) +
+                1;
         } else {
-            if (Helper._isNative(_inputToken)) {
-                _inputAmount += f.fixedNative;
-            }
-            if (_integrator != Helper.ZERO_ADDRESS && _feeRate > 0) {
-                if (info.tokenFeeRate * FEE_DENOMINATOR > _feeRate * info.routerShare) {
-                    uint256 p = FEE_DENOMINATOR *
-                        FEE_DENOMINATOR -
-                        info.tokenFeeRate *
-                        FEE_DENOMINATOR -
-                        (FEE_DENOMINATOR - info.routerShare) *
-                        _feeRate;
-                    beforeAmount += (_inputAmount * FEE_DENOMINATOR * FEE_DENOMINATOR) / p + 1;
-                } else {
-                    beforeAmount = (_inputAmount * FEE_DENOMINATOR) / (FEE_DENOMINATOR - _feeRate) + 1;
-                }
-            } else {
-                if (info.tokenFeeRate > 0) {
-                    beforeAmount = (_inputAmount * FEE_DENOMINATOR) / (FEE_DENOMINATOR - info.tokenFeeRate) + 1;
-                } else {
-                    beforeAmount = _inputAmount;
-                }
-            }
+            beforeAmount = _inputAmount;
         }
     }
 
@@ -162,18 +153,20 @@ contract FeeManager is Ownable2Step, IFeeManager {
         address _receiver,
         uint256 _fixedNative,
         uint256 _tokenRate,
-        uint256 _routerShare
+        uint256 _routerShare,
+        uint256 _routerNativeShare
     ) internal {
         require(_receiver != address(0), ErrorMessage.ZERO_ADDR);
         require(_tokenRate < FEE_DENOMINATOR, "FeeManager: invalid tokenFeeRate");
-        require(_routerShare <= FEE_DENOMINATOR, "FeeManager: invalid  share");
-
+        require(_routerShare <= FEE_DENOMINATOR, "FeeManager: invalid  routerShare");
+        require(_routerNativeShare <= FEE_DENOMINATOR, "FeeManager: invalid  routerNativeShare");
         FeeInfo storage routerFee = feeInfoList[integrator];
         routerFee.receiver = _receiver;
         routerFee.fixedNative = _fixedNative;
         routerFee.tokenFeeRate = _tokenRate;
         routerFee.routerShare = _routerShare;
+        routerFee.routerNativeShare = _routerNativeShare;
 
-        emit SetIntegratorFeeRate(integrator, _receiver, _fixedNative, _tokenRate, _routerShare);
+        emit SetIntegratorFeeRate(integrator, _receiver, _fixedNative, _tokenRate, _routerShare, _routerNativeShare);
     }
 }

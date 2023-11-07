@@ -48,22 +48,28 @@ Testing
 
 Deploy and setup
 
-router deploy and set up  this command will deploy router ,FeeManager,SwapAdaper and TransferProxy  also set setAuthorization and setFeeManager
+router deploy and set up  this command will deploy router ,SwapAdaper and TransferProxy  also set setAuthorization and setFeeManager
 
 ```
 npx hardhat router --network <network>
 ```
 
+deploy fee manager and setRouterFee from config
+
+```
+npx hardhat feeManager:deploy --network <network>
+```
+
 set up fee manager
 
-1.initialFeeStruct
+1.setRouterFee
 
 ```
-npx hardhat feeManager:initialFeeStruct --feetype 1 --fixedplatformnativefee 100000 --platformtokenfee 100 --network <network>
+npx hardhat feeManager:setRouterFee --receiver <default router receiver address> --fixednative <fixed native fee> --tokenfeerate <input token fee rate> --routershare <input token fee share of router> --routernativeshare <native fee share of router>  --network <network>
 ```
 
-2.setIntegratorFees
+2.setIntegratorFee
 
 ```
-npx hardhat feeManager:setIntegratorFees --integrator 0xE796bc0Ef665D5F730408a55AA0FF4e6f8B90920 --feetype 1 --tokenfee 100000 --platformtokenshare 100 --platformnativeshare 100 --fixednativeamount 10000000 --network <network>
+npx hardhat feeManager:setIntegratorFees --integrator <integrator address> --receiver <router recerver> -- fixednative <fixed native fee> --tokenfeerate <input token fee rate> --routershare <input token fee share of router> --routernativeshare <native token fee share of router>--network Makalu  
 ```

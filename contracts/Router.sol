@@ -30,6 +30,7 @@ contract Router is Ownable2Step, ReentrancyGuard {
         uint256 openliqAmount,
         uint256 integratorAmount,
         uint256 nativeAmount,
+        uint256 integratorNative,
         bytes32 transferId
     );
 
@@ -139,14 +140,15 @@ contract Router is Ownable2Step, ReentrancyGuard {
         address referrer,
         uint256 fee
     ) external view returns (address feeToken, uint256 amount, uint256 nativeAmount) {
+        if (address(feeManager) == Helper.ZERO_ADDRESS) return (Helper.ZERO_ADDRESS,0,0);
         IFeeManager.FeeDetail memory fd = feeManager.getFee(referrer, inputToken, inputAmount, fee);
         feeToken = fd.feeToken;
         if (Helper._isNative(inputToken)) {
             amount = 0;
-            nativeAmount = fd.routerNative + fd.routerToken + fd.integratorToken;
+            nativeAmount = fd.routerNative + fd.routerToken + fd.integratorToken + fd.integratorNative;
         } else {
             amount = fd.routerToken + fd.integratorToken;
-            nativeAmount = fd.routerNative;
+            nativeAmount = fd.routerNative + fd.integratorNative;
         }
     }
 
@@ -156,6 +158,7 @@ contract Router is Ownable2Step, ReentrancyGuard {
         address referrer,
         uint256 fee
     ) external view returns (address feeToken, uint256 beforeAmount) {
+        if (address(feeManager) == Helper.ZERO_ADDRESS) return (Helper.ZERO_ADDRESS,0);
         return feeManager.getAmountBeforeFee(referrer, inputToken, inputAmount, fee);
     }
 
@@ -195,17 +198,18 @@ contract Router is Ownable2Step, ReentrancyGuard {
         uint256 _fee
     ) internal returns (uint256 _remain) {
         // _token == fd.feeToken
-        if (address(feeManager) == address(0)) return (_amount);
+        if (address(feeManager) == Helper.ZERO_ADDRESS) return (_amount);
         IFeeManager.FeeDetail memory fd = feeManager.getFee(_referrer, _token, _amount, _fee);
         if (Helper._isNative(_token)) {
             uint256 openliqNative = fd.routerNative + fd.routerToken;
             if (openliqNative > 0) {
-                Helper._transfer(_token, fd.routerReceiver, fd.routerNative + fd.routerToken);
+                Helper._transfer(_token, fd.routerReceiver, openliqNative);
             }
+            uint256 integratorNative = fd.integratorToken + fd.integratorNative;
             if (fd.integratorToken > 0) {
-                Helper._transfer(_token, _referrer, fd.integratorToken);
+                Helper._transfer(_token, _referrer, integratorNative);
             }
-            _remain = _amount - openliqNative - fd.integratorToken;
+            _remain = _amount - openliqNative - integratorNative;
         } else {
             if (fd.routerNative > 0) {
                 Helper._transfer(Helper.ZERO_ADDRESS, fd.routerReceiver, fd.routerNative);
@@ -213,7 +217,9 @@ contract Router is Ownable2Step, ReentrancyGuard {
             if (fd.routerToken > 0) {
                 Helper._transfer(_token, fd.routerReceiver, fd.routerToken);
             }
-
+            if (fd.integratorNative > 0) {
+                Helper._transfer(Helper.ZERO_ADDRESS, _referrer, fd.integratorNative);
+            }
             if (fd.integratorToken > 0) {
                 Helper._transfer(_token, _referrer, fd.integratorToken);
             }
@@ -226,6 +232,7 @@ contract Router is Ownable2Step, ReentrancyGuard {
             fd.routerToken,
             fd.routerToken,
             fd.routerNative,
+            fd.integratorNative,
             _transferId
         );
     }
