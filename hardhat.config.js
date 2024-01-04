@@ -301,5 +301,13 @@ module.exports = {
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
 
+    Fuji: {
+      url: `https://avalanche-fuji.blockpi.network/v1/rpc/public`,
+      chainId: 43113,
+      zksync: false,
+      accounts:
+        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    },
+
   }
 };
