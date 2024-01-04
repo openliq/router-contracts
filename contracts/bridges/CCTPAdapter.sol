@@ -2,9 +2,9 @@
 pragma solidity 0.8.21;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "../../lib/Helper.sol";
-import "../../lib/ErrorMessage.sol";
-import "../../abstract/RemoteSwapper.sol";
+import "../lib/Helper.sol";
+import "../lib/ErrorMessage.sol";
+import "../abstract/RemoteSwapper.sol";
 
 interface ITokenMessenger {
     function depositForBurnWithCaller(
