@@ -10,6 +10,8 @@ let {
     tronSetAuthFromConfig,
     tronSetFeeManager,
 } = require("./utils/tronRouter.js");
+let {verify} = require("./utils/verify.js")
+
 
 task("router", "deploy router and set up").setAction(async (taskArgs, hre) => {
     const { getNamedAccounts, network } = hre;
@@ -79,6 +81,10 @@ task("router:deploy", "deploy router")
             }
             deploy[network.name]["Router"]["addr"] = router;
             await writeToFile(deploy);
+            const verifyArgs = [deployer,taskArgs.wtoken].map((arg) => (typeof arg == 'string' ? `'${arg}'` : arg)).join(' ')
+            console.log(`To verify, run: npx hardhat verify --network ${network.name} ${router} ${verifyArgs}`)
+            await verify(router,[deployer,taskArgs.wtoken],"contracts/Router.sol:Router",chainId); 
+            
         }
     });
 
@@ -111,6 +117,11 @@ task("router:deploySwapAdapter", "deploy SwapAdapter").setAction(async (taskArgs
         deploy[network.name]["SwapAdapter"] = swapAdapter;
 
         await writeToFile(deploy);
+
+        const verifyArgs = [deployer].map((arg) => (typeof arg == 'string' ? `'${arg}'` : arg)).join(' ')
+        console.log(`To verify, run: npx hardhat verify --network ${network.name} ${swapAdapter} ${verifyArgs}`)
+        await verify(swapAdapter,[deployer],"contracts/SwapAdapter.sol:SwapAdapter",chainId); 
+        
     }
 });
 

@@ -1,6 +1,7 @@
 let { create, createZk, readFromFile, writeToFile } = require("../../utils/create.js");
 let { task } = require("hardhat/config");
 let { getCCTP } = require("../../configs/CCTPConfig.js");
+let {verify} = require("./utils/verify.js")
 
 task("CCTPAdapter:deploy", "deploy CCTPAdapter").setAction(async (taskArgs, hre) => {
     const { getNamedAccounts, ethers } = hre;
@@ -17,10 +18,14 @@ task("CCTPAdapter:deploy", "deploy CCTPAdapter").setAction(async (taskArgs, hre)
             let deploy = await readFromFile(network.name);
             deploy[network.name]["cctpAdapter"] = cctpAdapter;
             await writeToFile(deploy);
+
+            const verifyArgs = [deployer,cctp.tokenMessenger,cctp.messageTransmitter].map((arg) => (typeof arg == 'string' ? `'${arg}'` : arg)).join(' ')
+            console.log(`To verify, run: npx hardhat verify --network ${network.name} ${cctpAdapter} ${verifyArgs}`)
+            await verify(cctpAdapter,[deployer,cctp.tokenMessenger,cctp.messageTransmitter],"contracts/CCTPAdapter.sol:CCTPAdapter",hre.network.config.chainId); 
          }else{
             throw("set config first");
          }
-   
+
 });
 
 

@@ -2,6 +2,7 @@ let { create, createZk, readFromFile, writeToFile } = require("../../utils/creat
 let { task } = require("hardhat/config");
 let { deployFeeManager, initialFeeStruct, setIntegratorFee } = require("./utils/tronFeeManager.js");
 let { getFeeManagerConfig } = require("../../configs/FeeManagerConfig.js");
+let {verify} = require("./utils/verify.js")
 
 task("feeManager:deploy", "deploy feeManager").setAction(async (taskArgs, hre) => {
     const { getNamedAccounts, ethers } = hre;
@@ -25,8 +26,11 @@ task("feeManager:deploy", "deploy feeManager").setAction(async (taskArgs, hre) =
         let deploy = await readFromFile(network.name);
         deploy[network.name]["FeeManager"] = feeManager;
         await writeToFile(deploy);
+        const verifyArgs = [deployer].map((arg) => (typeof arg == 'string' ? `'${arg}'` : arg)).join(' ')
+        console.log(`To verify, run: npx hardhat verify --network ${network.name} ${feeManager} ${verifyArgs}`)
+        await verify(feeManager,[deployer],"contracts/FeeManager.sol:FeeManager",chainId); 
+        await hre.run("feeManager:setRouterFeeFromConfig", {});
     }
-   await hre.run("feeManager:setRouterFeeFromConfig", {});
 });
 
 task("feeManager:setRouterFeeFromConfig", "setRouterFee feeManager").setAction(async (taskArgs, hre) => {
