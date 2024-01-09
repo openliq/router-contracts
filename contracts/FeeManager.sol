@@ -17,7 +17,6 @@ contract FeeManager is Ownable2Step, IFeeManager {
         uint256 routerNativeShare;
     }
 
-
     // Integrator -> IntegratorFeeInfo
     mapping(address => FeeInfo) public feeInfoList;
 
@@ -29,7 +28,6 @@ contract FeeManager is Ownable2Step, IFeeManager {
         uint256 routerShare,
         uint256 routerNativeShare
     );
-
 
     constructor(address _owner) payable {
         require(_owner != Helper.ZERO_ADDRESS, ErrorMessage.ZERO_ADDR);
@@ -141,7 +139,7 @@ contract FeeManager is Ownable2Step, IFeeManager {
             } else {
                 feeRate = _feeRate * FEE_DENOMINATOR;
                 uint256 routerRate = (info.tokenFeeRate * info.routerShare);
-                if (feeRate < routerRate ) {
+                if (feeRate < routerRate) {
                     feeRate = routerRate;
                 }
             }

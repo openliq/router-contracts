@@ -152,7 +152,7 @@ describe("Router", function () {
         let _swapData = "0x";
         let _callData = ethers.utils.defaultAbiCoder.encode(
             ["tuple(address,address,uint256,uint256,address,bytes)"],
-            [[rubic, rubic, _amount, extraNativeAmount, user.address, data]]
+            [[rubic, rubic, 0, extraNativeAmount, user.address, data]]
         );
         let _permitData = "0x";
         let token = await ethers.getContractAt(ERC20, _srcToken, user);
@@ -334,7 +334,7 @@ describe("Router", function () {
 
         let _payData = ethers.utils.defaultAbiCoder.encode(
             ["tuple(address,address,uint256,uint256,address,bytes)"],
-            [[pay.address, pay.address, ethers.utils.parseEther("1"), 0, user.address, pay_fuc_encode]]
+            [[pay.address, pay.address, 0, 0, user.address, pay_fuc_encode]]
         );
 
         let _permitData = "0x";
