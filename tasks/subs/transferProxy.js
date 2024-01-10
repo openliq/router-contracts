@@ -1,7 +1,7 @@
 let { create, createZk, readFromFile, writeToFile } = require("../../utils/create.js");
 let { task } = require("hardhat/config");
 let { deployTransferProxy } = require("./utils/tronTransferProxy.js");
-let {verify} = require("./utils/verify.js")
+let { verify } = require("./utils/verify.js");
 
 task("transferProxy:deploy", "deploy feeManager").setAction(async (taskArgs, hre) => {
     const { getNamedAccounts, ethers } = hre;
@@ -25,7 +25,7 @@ task("transferProxy:deploy", "deploy feeManager").setAction(async (taskArgs, hre
         let deploy = await readFromFile(network.name);
         deploy[network.name]["TransferProxy"] = transferProxy;
         await writeToFile(deploy);
-        console.log(`To verify, run: npx hardhat verify --network ${network.name} ${transferProxy}`)
-        await verify(transferProxy,[],"contracts/TransferProxy.sol:TransferProxy",chainId); 
+        console.log(`To verify, run: npx hardhat verify --network ${network.name} ${transferProxy}`);
+        await verify(transferProxy, [], "contracts/TransferProxy.sol:TransferProxy", chainId);
     }
 });

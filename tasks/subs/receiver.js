@@ -1,7 +1,7 @@
 let { task } = require("hardhat/config");
 let { deployReceiver, tronSetRouter } = require("./utils/tronReceiver.js");
 let { create, createZk, readFromFile, writeToFile } = require("../../utils/create.js");
-let {verify} = require("./utils/verify.js")
+let { verify } = require("./utils/verify.js");
 
 task("receiver:deploy", "deploy receiver").setAction(async (taskArgs) => {
     const { deployments, getNamedAccounts, ethers } = hre;
@@ -24,11 +24,12 @@ task("receiver:deploy", "deploy receiver").setAction(async (taskArgs) => {
             receiver = result[0];
         }
         console.log("Receiver  address :", receiver);
+        let deploy = await readFromFile(network.name);
         deploy[network.name]["Receiver"] = receiver;
         await writeToFile(deploy);
-        const verifyArgs = [deployer].map((arg) => (typeof arg == 'string' ? `'${arg}'` : arg)).join(' ')
-        console.log(`To verify, run: npx hardhat verify --network ${network.name} ${receiver} ${verifyArgs}`)
-        await verify(receiver,[deployer],"contracts/Receiver.sol:Receiver",chainId); 
+        const verifyArgs = [deployer].map((arg) => (typeof arg == "string" ? `'${arg}'` : arg)).join(" ");
+        console.log(`To verify, run: npx hardhat verify --network ${network.name} ${receiver} ${verifyArgs}`);
+        await verify(receiver, [deployer], "contracts/Receiver.sol:Receiver", chainId);
     }
 });
 

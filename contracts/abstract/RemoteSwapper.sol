@@ -154,9 +154,8 @@ contract RemoteSwapper is Ownable2Step {
         uint256 _amount
     ) external returns (address target, uint256 callAmount) {
         require(msg.sender == address(this));
-        require(_amount >= _callParam.amount, ErrorMessage.CALL_AMOUNT_INVALID);
         bool result;
-        (result, callAmount) = _callBack(_callToken, _callParam);
+        (result, callAmount) = _callBack(_amount, _callToken, _callParam);
         require(result, ErrorMessage.CALL_FAIL);
         target = _callParam.target;
     }
@@ -171,11 +170,12 @@ contract RemoteSwapper is Ownable2Step {
     }
 
     function _callBack(
+        uint256 _amount,
         address _token,
         Helper.CallbackParam memory _callParam
     ) internal returns (bool _result, uint256 _callAmount) {
         require(_checkCallFunction(_callParam.data), "backList");
-        (_result, _callAmount) = Helper._callBack(_token, _callParam);
+        (_result, _callAmount) = Helper._callBack(_amount, _token, _callParam);
     }
 
     function _checkCallFunction(bytes memory callDatas) internal view returns (bool) {

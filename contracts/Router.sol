@@ -140,7 +140,7 @@ contract Router is Ownable2Step, ReentrancyGuard {
         address referrer,
         uint256 fee
     ) external view returns (address feeToken, uint256 amount, uint256 nativeAmount) {
-        if (address(feeManager) == Helper.ZERO_ADDRESS) return (Helper.ZERO_ADDRESS,0,0);
+        if (address(feeManager) == Helper.ZERO_ADDRESS) return (Helper.ZERO_ADDRESS, 0, 0);
         IFeeManager.FeeDetail memory fd = feeManager.getFee(referrer, inputToken, inputAmount, fee);
         feeToken = fd.feeToken;
         if (Helper._isNative(inputToken)) {
@@ -158,7 +158,7 @@ contract Router is Ownable2Step, ReentrancyGuard {
         address referrer,
         uint256 fee
     ) external view returns (address feeToken, uint256 beforeAmount) {
-        if (address(feeManager) == Helper.ZERO_ADDRESS) return (Helper.ZERO_ADDRESS,0);
+        if (address(feeManager) == Helper.ZERO_ADDRESS) return (Helper.ZERO_ADDRESS, 0);
         return feeManager.getAmountBeforeFee(referrer, inputToken, inputAmount, fee);
     }
 
@@ -182,8 +182,7 @@ contract Router is Ownable2Step, ReentrancyGuard {
 
         if (_callbackData.length > 0) {
             Helper.CallbackParam memory callParam = abi.decode(_callbackData, (Helper.CallbackParam));
-            require(swapOutAmount >= callParam.amount, ErrorMessage.CALL_AMOUNT_INVALID);
-            (result, callAmount) = _callBack(dstToken, callParam);
+            (result, callAmount) = _callBack(swapOutAmount, dstToken, callParam);
             require(result, ErrorMessage.CALL_FAIL);
             receiver = callParam.receiver;
             target = callParam.target;
@@ -238,11 +237,12 @@ contract Router is Ownable2Step, ReentrancyGuard {
     }
 
     function _callBack(
+        uint256 _amount,
         address _token,
         Helper.CallbackParam memory _callParam
     ) internal returns (bool _result, uint256 _callAmount) {
         require(approved[_callParam.target], ErrorMessage.NO_APPROVE);
-        (_result, _callAmount) = Helper._callBack(_token, _callParam);
+        (_result, _callAmount) = Helper._callBack(_amount, _token, _callParam);
         require(address(this).balance >= nativeBalanceBeforeExec, ErrorMessage.NATIVE_VAULE_OVERSPEND);
     }
 
