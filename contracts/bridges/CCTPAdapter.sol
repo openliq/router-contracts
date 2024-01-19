@@ -62,8 +62,9 @@ contract CCTPAdapter is RemoteSwapper, IMessageHandler {
         uint256 indexed _amount,
         uint32 indexed _destinationDomain,
         address indexed _burnToken,
-        bytes32 _mintRecipient,
-        bytes _playload
+        uint256 _burnNoce,
+        uint256 _messageNonce,
+        bytes32 _mintRecipient
     );
 
     constructor(address _owner, address _tokenMessenger, address _messageTransmitter) {
@@ -89,11 +90,12 @@ contract CCTPAdapter is RemoteSwapper, IMessageHandler {
         bytes calldata _payload
     ) external {
         require(_amount > 0, "value_0");
+        require(_mintRecipient != bytes32(""),"zero receiver");
         bytes32 caller = remoteAdapters[uint256(_destinationDomain)];
         require(caller != bytes32(""), "unsupported domain");
         SafeERC20.safeTransferFrom(IERC20(_burnToken), msg.sender, address(this), _amount);
         SafeERC20.safeIncreaseAllowance(IERC20(_burnToken), tokenMessenger, _amount);
-        uint64 nonce = ITokenMessenger(tokenMessenger).depositForBurnWithCaller(
+        uint64 burnNonce = ITokenMessenger(tokenMessenger).depositForBurnWithCaller(
             _amount,
             _destinationDomain,
             _mintRecipient,
@@ -101,15 +103,16 @@ contract CCTPAdapter is RemoteSwapper, IMessageHandler {
             caller
         );
         SafeERC20.safeApprove(IERC20(_burnToken), tokenMessenger, 0);
+        uint64 messageNonce;
         if (_payload.length > 0) {
-            IMessageTransmitter(messageTransmitter).sendMessageWithCaller(
+            messageNonce =  IMessageTransmitter(messageTransmitter).sendMessageWithCaller(
                 _destinationDomain,
                 caller,
                 caller,
-                abi.encode(nonce, _payload)
+                abi.encode(burnNonce, _payload)
             );
         }
-        emit CCTPBridge(_amount, _destinationDomain, _burnToken, _mintRecipient, _payload);
+        emit CCTPBridge(_amount, _destinationDomain, _burnToken,uint256(burnNonce),uint256(messageNonce), _mintRecipient);
     }
 
     function onReceive(address _mintToken, bytes[2] calldata messages, bytes[2] calldata signatures) external {
@@ -118,7 +121,11 @@ contract CCTPAdapter is RemoteSwapper, IMessageHandler {
         mintAmount = IERC20(mintToken).balanceOf(address(this));
         IMessageTransmitter(messageTransmitter).receiveMessage(messages[0], signatures[0]);
         mintAmount = IERC20(mintToken).balanceOf(address(this)) - mintAmount;
-        IMessageTransmitter(messageTransmitter).receiveMessage(messages[1], signatures[1]);
+        if(messages[1].length != 0){
+            IMessageTransmitter(messageTransmitter).receiveMessage(messages[1], signatures[1]);
+        }
+        mintAmount = 0;
+        mintNonce = 0;
     }
 
     // onReceive -> messageTransmitter receiveMessage -> handleReceiveMessage
@@ -135,7 +142,6 @@ contract CCTPAdapter is RemoteSwapper, IMessageHandler {
             (bytes32, bytes, bytes)
         );
         _swapAndCall(transactionId, mintToken, mintAmount, swap, callDatas, 0);
-        mintAmount = 0;
         return true;
     }
 

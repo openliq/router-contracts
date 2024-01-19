@@ -28,11 +28,11 @@ let cctp = new Map(
 
 
 
-        ["Goerli",{
-            domain:"0",
-            tokenMessenger:"0xd0c3da58f55358142b8d3e06c1c30c5c6114efe8",
-            messageTransmitter:"0x26413e8157cd32011e726065a5462e97dd4d03d9",
-            tokenMinter:"0xca6b4c00831ffb77afe22e734a6101b268b7fcbe",
+        ["MaticTest",{
+            domain:"7",
+            tokenMessenger:"0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5",
+            messageTransmitter:"0xe09A679F56207EF33F5b9d8fb4499Ec00792eA73",
+            tokenMinter:"0xE997d7d2F6E065a9A93Fa2175E878Fb9081F1f0A",
         }],
         ["Fuji",{
             domain:"1",
