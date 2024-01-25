@@ -51,8 +51,8 @@ task("receiver:setRouter", "set bridges router address")
             let Receiver = await ethers.getContractFactory("Receiver");
             let receiver = Receiver.attach(taskArgs.receiver);
             let result;
-            if (taskArgs.name === "cbridge") {
-                result = await (await receiver.setCBridgeMessageBus(taskArgs.router)).wait();
+            if (taskArgs.name === "btter") {
+                result = await (await receiver.setButterMos(taskArgs.router)).wait();
             } else if (taskArgs.name === "amarok") {
                 result = await (await receiver.setAmarokRouter(taskArgs.router)).wait();
             } else if (taskArgs.name === "stargate") {

@@ -7,9 +7,14 @@ let usdc = "0x5425890298aed601595a70AB815c96711a31Bc65"; //Fuji - usdc
 async function main() {
     //  await deployCCTPAdapter();
     //  await setRemoteAdapter()
-    await bridge()
+    // await bridge()
     // await onReceive();
     // await getHash();
+    await multiBridge();
+    // let MulitBridge = await hre.ethers.getContractFactory("MulitBridge");
+    // let m = await MulitBridge.deploy();
+    // await m.deployed();
+    // console.log(m.address);
 
 }
 //p - 0xcC64a1A099ac8d77f42aF406d386d680e9fC45d2
@@ -17,7 +22,7 @@ async function main() {
 
 async function getHash() {
     let a =
-        "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000002f4000000000000000100000007000000000004937a000000000000000000000000cc64a1a099ac8d77f42af406d386d680e9fc45d2000000000000000000000000cc64a1a099ac8d77f42af406d386d680e9fc45d2000000000000000000000000cc64a1a099ac8d77f42af406d386d680e9fc45d2000000000000000000000000000000000000000000000000000000000004937900000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000220000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001800000000000000000000000000000000000000000000000000000000000000020000000000000000000000000769cfd4d1606fa51bdae9a65088fd3f8c2f02e46000000000000000000000000769cfd4d1606fa51bdae9a65088fd3f8c2f02e46000000000000000000000000000000000000000000000000000000000000002400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000cdae5da23b64bfecd421d6487ffeabf6558828d00000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000006466be0ee90000000000000000000000009999f7fea5938fd3b1e26a12c3f2fb024e194f970000000000000000000000000cdae5da23b64bfecd421d6487ffeabf6558828d00000000000000000000000000000000000000000000000000000000000186a000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+        "";
     let d = ethers.utils.defaultAbiCoder.decode(["bytes"], a)[0];
     console.log(d);
     console.log(ethers.utils.keccak256(d));
@@ -87,6 +92,60 @@ async function bridge() {
             )
         )
     ).wait();
+}
+
+
+async function multiBridge() {
+    let [wallet] = await hre.ethers.getSigners();
+    let ERC20 = [
+        "function approve(address spender, uint256 amount) external returns (bool)",
+        "function balanceOf(address account) external view returns (uint256)",
+        "function transfer(address to, uint value) external returns (bool)",
+    ];
+
+    let token = await ethers.getContractAt(ERC20, usdc, wallet);
+    let amount = 100000;
+ 
+  
+
+    let adapt = "0xcC64a1A099ac8d77f42aF406d386d680e9fC45d2"
+    let MulitBridge = await hre.ethers.getContractFactory("MulitBridge");
+    let PayMock = await hre.ethers.getContractFactory("PayMock");
+    let payMock = PayMock.attach("0x769CFd4D1606fa51bDaE9a65088Fd3F8C2f02e46")
+    let mulitBridge = MulitBridge.attach("0xaA802d303948738373E3C1e5B529e93CFAF4ac18");
+    let _mintRecipient = "0x000000000000000000000000cC64a1A099ac8d77f42aF406d386d680e9fC45d2";
+    let c = payMock.interface.encodeFunctionData("mockTransfer", ["0x9999f7Fea5938fD3b1E26A12c3f2fb024e194f97",wallet.address, amount]);
+    let _callData = ethers.utils.defaultAbiCoder.encode(
+        ["tuple(address,address,uint256,uint256,address,bytes)"],
+        [
+            [
+                payMock.address,
+                payMock.address,
+                110,
+                0,
+                wallet.address,
+                c,
+            ],
+        ]
+    );
+
+    let p = [{
+     amount:amount,
+     destinationDomain:7,
+     mintRecipient:_mintRecipient,
+     burnToken:usdc,
+     payload:ethers.utils.defaultAbiCoder.encode(["bytes32", "bytes", "bytes"],[ethers.constants.HashZero, "0x", _callData])
+    }
+    ,{
+        amount:amount,
+        destinationDomain:7,
+        mintRecipient:_mintRecipient,
+        burnToken:usdc,
+        payload:ethers.utils.defaultAbiCoder.encode(["bytes32", "bytes", "bytes"],[ethers.constants.HashZero, "0x", _callData])
+    }]
+    await (await token.approve(mulitBridge.address, "200000")).wait();
+    await (await mulitBridge.mulitBridge(adapt,p)).wait();
+
 }
 
 async function onReceive() {
