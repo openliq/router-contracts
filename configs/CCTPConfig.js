@@ -24,6 +24,18 @@ let cctp = new Map(
             messageTransmitter:"0xC30362313FBBA5cf9163F0bb16a0e01f01A896ca",
             tokenMinter:"0xE7Ed1fa7f45D05C508232aa32649D89b73b8bA48",
         }],
+        ["Base",{
+            domain:"6",
+            tokenMessenger:"0x1682Ae6375C4E4A97e4B583BC394c861A46D8962",
+            messageTransmitter:"0xAD09780d193884d503182aD4588450C416D6F9D4",
+            tokenMinter:"	0xe45B133ddc64bE80252b0e9c75A8E74EF280eEd6",
+        }],
+        ["Matic",{
+            domain:"7",
+            tokenMessenger:"0x9daF8c91AEFAE50b9c0E69629D3F6Ca40cA3B3FE",
+            messageTransmitter:"0xF3be9355363857F3e001be68856A2f96b4C39Ba9",
+            tokenMinter:"0x10f7835F827D6Cf035115E10c50A853d7FB2D2EC",
+        }],
 
 
 
