@@ -4,6 +4,7 @@ let config = new Map(
         ["Eth",{
             wToken:"0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
             executors:[
+                "0xeCc19E177d24551aA7ed6Bc6FE566eCa726CC8a9",//StargateComposer
                 "0x8731d54E9D02c286767d56ac03e8037C07e01e98",//stargate
                 "0x150f94B44927F078737562f0fcF3C95c01Cc2376",//stargate eth
                 "0xb1b2eeF380f21747944f46d28f683cD1FBB4d03c",//stargate eth
@@ -24,6 +25,7 @@ let config = new Map(
         ["Avalanche",{
             wToken:"0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7",
             executors:[
+                "0xeCc19E177d24551aA7ed6Bc6FE566eCa726CC8a9",//StargateComposer
                 "0x45A01E4e04F14f7A4a6702c74187c5F6222033cd",//stargate
                 "0x3335733c454805df6a77f825f266e136FB4a3333",//rubic
                 "0x0000000022D53366457F9d5E68Ec105046FC4383",//curve 
@@ -41,6 +43,7 @@ let config = new Map(
         ["Bsc",{
             wToken:"0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
             executors:[
+                "0xeCc19E177d24551aA7ed6Bc6FE566eCa726CC8a9",//StargateComposer
                 "0x4a364f8c717cAAD9A442737Eb7b8A55cc6cf18D8",//stargate
                 "0x3335733c454805df6a77f825f266e136fb4a3333",//rubic
                 "0x1111111254eeb25477b68fb85ed929f73a960582",//1inch
@@ -56,6 +59,7 @@ let config = new Map(
         ["Matic",{
             wToken:"0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
             executors:[
+                "0xeCc19E177d24551aA7ed6Bc6FE566eCa726CC8a9",//StargateComposer
                 "0x45A01E4e04F14f7A4a6702c74187c5F6222033cd",//stargate
                 "0x3335733c454805df6a77f825f266e136fb4a3333",//rubic
                 "0x89D6B81A1Ef25894620D05ba843d83B0A296239e",//algebra
@@ -74,6 +78,7 @@ let config = new Map(
         ["Arbitrum",{
             wToken:"0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
             executors:[
+                "0xeCc19E177d24551aA7ed6Bc6FE566eCa726CC8a9",//StargateComposer
                 "0x53Bf833A5d6c4ddA888F69c22C88C9f356a41614",//stargate
                 "0xbf22f0f184bCcbeA268dF387a49fF5238dD23E40",//stargate eth
                 "0xb1b2eeF380f21747944f46d28f683cD1FBB4d03c",//stargate eth
@@ -92,6 +97,7 @@ let config = new Map(
         ["Optimism",{
             wToken:"0x4200000000000000000000000000000000000006",
             executors:[
+                "0xeCc19E177d24551aA7ed6Bc6FE566eCa726CC8a9",//StargateComposer
                 "0xB0D502E938ed5f4df2E681fE6E419ff29631d62b",//stargate
                 "0xB49c4e680174E331CB0A7fF3Ab58afC9738d5F8b",//stargate eth
                 "0xb1b2eeF380f21747944f46d28f683cD1FBB4d03c",//stargate eth
@@ -178,6 +184,7 @@ let config = new Map(
         ["Fantom",{
             wToken:"0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83",
             executors:[	
+                "0xeCc19E177d24551aA7ed6Bc6FE566eCa726CC8a9",//StargateComposer
                 "0xAf5191B0De278C7286d6C7CC6ab6BB8A73bA2Cd6",//stargate
                 "0x3335733c454805df6a77f825f266e136FB4a3333",//rubic
                 "0x0000000022D53366457F9d5E68Ec105046FC4383",//curve 
@@ -220,6 +227,7 @@ let config = new Map(
         ["Kava",{
             wToken:"0xc86c7C0eFbd6A49B35E8714C5f59D99De09A225b",
             executors:[	
+                "0xeCc19E177d24551aA7ed6Bc6FE566eCa726CC8a9",//StargateComposer
                 "0x0000000022D53366457F9d5E68Ec105046FC4383",//curve 
                 "0x7a2c1D96C76B6EB62241df4d2fAEb9F0D3D59E10",//elk  
                 "0xEa3CB4Ba9d1fD6fb19Df1380958d5649bD3e7C50",//jupiter 
@@ -242,6 +250,7 @@ let config = new Map(
         ["Metis",{
             wToken:"0xdeaddeaddeaddeaddeaddeaddeaddeaddead0000",
             executors:[	
+                "0xeCc19E177d24551aA7ed6Bc6FE566eCa726CC8a9",//StargateComposer
                 "0x2F6F07CDcf3588944Bf4C42aC74ff24bF56e7590",//stargate
                 "0x1E876cCe41B7b844FDe09E38Fa1cf00f213bFf56",//net-swap 
             ]
@@ -341,6 +350,7 @@ let config = new Map(
         ["Linea",{
             wToken:"0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f",
             executors: [
+                "0xeCc19E177d24551aA7ed6Bc6FE566eCa726CC8a9",//StargateComposer
                 "0x73Ce60416035B8D7019f6399778c14ccf5C9c7A1",//xy router
                 "0xce16F69375520ab01377ce7B88f5BA8C48F8D666",//SQUID
             ]
@@ -350,6 +360,7 @@ let config = new Map(
         ["Base",{
             wToken:"0x4200000000000000000000000000000000000006",
             executors: [
+                "0xeCc19E177d24551aA7ed6Bc6FE566eCa726CC8a9",//StargateComposer
                 "0xce16F69375520ab01377ce7B88f5BA8C48F8D666",//SQUID
             ]
            

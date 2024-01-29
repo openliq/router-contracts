@@ -4,7 +4,7 @@ let { getCCTP } = require("../../configs/CCTPConfig.js");
 let { verify } = require("./utils/verify.js");
 
 task("CCTPAdapter:deploy", "deploy CCTPAdapter").setAction(async (taskArgs, hre) => {
-    const { getNamedAccounts, ethers } = hre;
+    const { getNamedAccounts, ethers,network } = hre;
     const { deployer } = await getNamedAccounts();
     console.log("deployer :", deployer);
     let cctp = getCCTP(network.name);
@@ -41,7 +41,7 @@ task("CCTPAdapter:setRemoteAdapter", "setRemoteAdapter")
     .addParam("domain", "remote domain")
     .addParam("adpater", "remote adpater address")
     .setAction(async (taskArgs, hre) => {
-        const { getNamedAccounts, ethers } = hre;
+        const { getNamedAccounts, ethers,network } = hre;
         const { deployer } = await getNamedAccounts();
         console.log("deployer :", deployer);
         let CCTPAdapter = await ethers.getContractFactory("CCTPAdapter");
